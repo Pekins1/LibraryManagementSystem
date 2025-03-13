@@ -72,7 +72,8 @@ public class Library implements Serializable {
     }
 
     /////////////////////////////////////Search for a book in the library////////////////////////////////////
-       
+    
+    // Search Methods
     // Find book by ISBN
     public Book findBookByISBN(String isbn) throws BookNotFoundException {
         // iterate the list of books and check if the ISBN matches

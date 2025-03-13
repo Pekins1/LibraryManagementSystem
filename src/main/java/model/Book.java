@@ -18,7 +18,7 @@ public class Book implements Serializable {
         this.genre = genre;
         this.isbn = isbn;
         this.publishedYear = year;
-        this.isAvailable = true;
+        // this.isAvailable = true;
     }
 
     // Getters for retrieving the values of the attributes
