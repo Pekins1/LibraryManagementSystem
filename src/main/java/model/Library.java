@@ -68,7 +68,7 @@ public class Library implements Serializable {
         // remove the book from the library
         books.remove(book);
         // update the book availability
-        book.setIsAvailable(false);
+        // book.setIsAvailable(false);
     }
 
     /////////////////////////////////////Search for a book in the library////////////////////////////////////
@@ -117,7 +117,7 @@ public class Library implements Serializable {
             if(book.getGenre().equals(genre)){
                 return book;
             }
-            }
+        }
         // if no book is found, throw an exception
         throw new BookNotFoundException("Book not found in the library.");
     }
@@ -127,10 +127,10 @@ public class Library implements Serializable {
     //////////////////////////////////Borrowing books system//////////////////////////////////
 
     */
-    public void borrowBook(String isbn, String borrowerName) 
+    public void borrowBook(String title, String borrowerName) 
         throws BookNotFoundException, BookNotAvailableException, BorrowLimitExceededException {
         // find the book by isbn
-        Book book = findBookByISBN(isbn);
+        Book book = findBookByTitle(title);
         if(!book.isAvailable()){
             throw new BookNotAvailableException("Book is not available.");
         }
@@ -158,20 +158,39 @@ public class Library implements Serializable {
     /////////////////////////////////////Returning books system//////////////////////////////////// 
 
     // Returning books System
-    public void returnBook(String isbn, String borrowerName) 
+    public void returnBook(String title, String borrowerName) 
         throws BookNotFoundException, BookNotBorrowedException {
-        // check if the book is borrowed
-        Book book = findBookByISBN(isbn);
+        // Find the book by title
+        Book book = findBookByTitle(title);
+        
+        // Check if the book is available (should be unavailable if borrowed)
         if(book.isAvailable()){
             throw new BookNotBorrowedException("Book is not borrowed.");
         }
-        // remove the book from the borrower's list of borrowed books
+        
+        // Check if the borrower exists in our records
+        if(!borrowedBooks.containsKey(borrowerName)){
+            throw new BookNotBorrowedException("Borrower has not borrowed any books.");
+        }
+        
+        // Get the borrower's list directly (no need to loop through all entries)
         List<Book> booksBorrowed = borrowedBooks.get(borrowerName);
+        
+        // Check if this borrower has this specific book
+        if(!booksBorrowed.contains(book)){
+            throw new BookNotBorrowedException("This borrower did not borrow this book.");
+        }
+        
+        // Remove the book from the borrower's list
         booksBorrowed.remove(book);
-        // update the borrowedBooks Map
-        borrowedBooks.put(borrowerName,booksBorrowed);
-        // update the book availability
+        
+        // Update the book availability
         book.setIsAvailable(true);
+        
+        // If borrower has no more books, remove them from the map
+        if(booksBorrowed.isEmpty()){
+            borrowedBooks.remove(borrowerName);
+        }
     }
 
     /////////////////////////////////////Get all available books in the library//////////////////////////////////// 
@@ -187,6 +206,15 @@ public class Library implements Serializable {
             }
         }
         return availableBooks;
+    }
+
+    // Get all books in the library
+    public List<Book> getAllBooks(){
+        List<Book> allBooks = new ArrayList<>();
+        for(Book book: books){
+            allBooks.add(book);
+        }
+        return allBooks;
     }
 
     /////////////////////////////////////Get all borrowed books in the library//////////////////////////////////// 
