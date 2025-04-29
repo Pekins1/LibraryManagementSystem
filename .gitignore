@@ -36,3 +36,12 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### .Class Files ###
+*.class
+
+### IDE Meta Data ###
+/.idea/
+*.log
+*.temp
+*.class
