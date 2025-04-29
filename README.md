@@ -119,10 +119,6 @@ This project was created as a learning exercise. Feel free to fork the repositor
 - Enhancing validation and error handling
 - Improving code documentation
 
-## License
-
-This project is available under the MIT License. See the LICENSE file for details.
-
 ---
 
 _This project was developed as part of a Java programming curriculum focused on object-oriented programming, collections, and exception handling._
