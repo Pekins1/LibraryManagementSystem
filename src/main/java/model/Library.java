@@ -29,9 +29,11 @@ public class Library implements Serializable {
     // Add a book to the library
     public void addBook(Book book) throws BookAlreadyExistsException {
         // check is the book is already in the library
+        boolean duplicate = books.stream().anyMatch(b -> b.getISBN().equals(book.getISBN())); // this line ok code converts books into a stream and
+                                                                                              // performs a lambda check to see if the isbn's match and returns a boolean
 
-        if(book.isAvailable()){
-            throw new BookAlreadyExistsException("Book found in the library.");
+        if(duplicate){
+            throw new BookAlreadyExistsException("Book with same ISBN already in library.");
         }
         // add the book to the library
         books.add(book);
@@ -44,8 +46,10 @@ public class Library implements Serializable {
     public void addBooks(List<Book> books) throws BookAlreadyExistsException {
         // iterate the list of books and check if they are already in the library
         for(Book book : books){
-            if(book.isAvailable()){
-                throw new BookAlreadyExistsException(book + ": Book found in the library.");
+            // cheak books for duplicate isbns
+            boolean duplicate = books.stream().anyMatch(b -> b.getISBN().equals(book.getISBN()));
+            if(duplicate){
+                throw new BookAlreadyExistsException(book + ": Book with same ISBN found in the library.");
             }
             // add the books to the library
             // this.books is the list of books in the library
