@@ -44,17 +44,26 @@ public class Library implements Serializable {
     /////////////////////////////////////Add a list of books to the library//////////////////////////////////// 
 
     public void addBooks(List<Book> books) throws BookAlreadyExistsException {
-        // iterate the list of books and check if they are already in the library
-        for(Book book : books){
-            // cheak books for duplicate isbns
-            boolean duplicate = books.stream().anyMatch(b -> b.getISBN().equals(book.getISBN()));
-            if(duplicate){
-                throw new BookAlreadyExistsException(book + ": Book with same ISBN found in the library.");
+        // First check for duplicates in the input list
+        for(Book book : books) {
+            boolean duplicateInInput = books.stream()
+                .filter(b -> b != book) // Don't compare with itself
+                .anyMatch(b -> b.getISBN().equals(book.getISBN()));
+            if(duplicateInInput) {
+                throw new BookAlreadyExistsException(book + ": Book with same ISBN found in the input list.");
             }
-            // add the books to the library
-            // this.books is the list of books in the library
+            
+            // Check against existing books in library
+            boolean duplicateInLibrary = this.books.stream()
+                .anyMatch(b -> b.getISBN().equals(book.getISBN()));
+            if(duplicateInLibrary) {
+                throw new BookAlreadyExistsException(book + ": Book with same ISBN already exists in the library.");
+            }
+        }
+        
+        // If no duplicates found, add all books
+        for(Book book : books) {
             this.books.add(book);
-            // update the book availability
             book.setIsAvailable(true);
         }
     }

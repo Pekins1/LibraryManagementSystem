@@ -46,5 +46,27 @@ class LibraryDuplicateIsbnTest {
         assertFalse(b.isAvailable(), "Fresh book should be unavailable on creation");
     }
 
+    @Test
+    void checkIfBorrowUpdatesAvailability() throws Exception{
+        Library newLib = new Library();
+
+        Book first = new Book("Clean Code", "R. C. Martin", "Software", "978-0132350884", 2008);
+        Book second = new Book("Brave New World", "A. Huxley", "Fiction", "123", 1932);
+
+        List<Book> bookList =new ArrayList<>();
+        bookList.add(first);
+        bookList.add(second);
+
+        newLib.addBooks(bookList);
+        // newLib.addBook(first);
+
+        // Borrowing book should succeed
+        newLib.borrowBook("Clean Code","Rahkel");
+
+        // should pass
+        assertFalse(first.isAvailable(),"Book should be set to unavailabl on borrow");
+
+    }
+
     
 }
