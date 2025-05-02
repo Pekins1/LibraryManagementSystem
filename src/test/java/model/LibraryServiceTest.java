@@ -42,7 +42,8 @@ class LibraryServiceTest {
         bookList.add(third);
 
         // this should fail
-        assertThrows(BookAlreadyExistsException.class,() -> lib.addBooks(bookList));
+        assertThrows(BookAlreadyExistsException.class,() -> lib.addBooks(bookList),
+            "Adding a duplicate ISBN should throw");
     }
     @Test
     void newBookStartsUnavailableUntilAdded() {
