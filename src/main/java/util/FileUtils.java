@@ -7,6 +7,8 @@ import model.Book;
 import model.Library;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+ 
 public final class FileUtils {
     //private constructor to prevent instantiation
     private FileUtils(){
@@ -17,17 +19,25 @@ public final class FileUtils {
      * saves library to a file using java serialization
      */
     public static void saveLibraryToFile(Library library, String fileName) throws IOException{
-        try(ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(fileName))){
-            out.writeObject(library);
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            // Configure pretty printing for better readability
+            mapper.writerWithDefaultPrettyPrinter()
+                 .writeValue(new File(fileName), library);
+        } catch (IOException e) {
+            throw new IOException("Failed to save library to file: " + e.getMessage());
         }
     }
 
     /*
      * loads library data from a file using java serialization
      */
-    public static Library loadLibraryFromFile(String filename) throws IOException,ClassNotFoundException{
-        try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))){
-            return (Library) in.readObject();
+    public static Library loadLibraryFromFile(String fileName) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(new File(fileName), Library.class);
+        } catch (IOException e) {
+            throw new IOException("Failed to load library from file: " + e.getMessage());
         }
     }
 

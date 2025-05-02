@@ -10,16 +10,22 @@ import exception.BookNotFoundException;
 import exception.BookNotAvailableException;
 import exception.BookNotBorrowedException;
 import exception.BorrowLimitExceededException;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class Library implements Serializable {
 
     // Attributes
-    private List<Book> books;
+    @JsonProperty("books")
+    private final List<Book> books;
+    @JsonProperty("borrowerMap")
     private Map<String, List<Book>> borrowedBooks;
     static final int MAX_BORROW_LIMIT = 6;
 
     // Constructor
-    public Library(){
+    @JsonCreator
+    public Library() {
         this.books = new ArrayList<>();
         this.borrowedBooks = new HashMap<>();
     }
@@ -28,16 +34,15 @@ public class Library implements Serializable {
 
     // Add a book to the library
     public void addBook(Book book) throws BookAlreadyExistsException {
-        // check is the book is already in the library
-        boolean duplicate = books.stream().anyMatch(b -> b.getISBN().equals(book.getISBN())); // this line ok code converts books into a stream and
-                                                                                              // performs a lambda check to see if the isbn's match and returns a boolean
-
-        if(duplicate){
-            throw new BookAlreadyExistsException("Book with same ISBN already in library.");
+        // Check for duplicate ISBN
+        boolean duplicate = books.stream()
+            .anyMatch(b -> b.getISBN().equals(book.getISBN()));
+        
+        if(duplicate) {
+            throw new BookAlreadyExistsException("Book with same ISBN already exists in the library.");
         }
-        // add the book to the library
+        
         books.add(book);
-        // update the book avalability
         book.setIsAvailable(true);
     }
 
@@ -233,39 +238,27 @@ public class Library implements Serializable {
     /////////////////////////////////////Get all borrowed books in the library//////////////////////////////////// 
 
     // Get all borrowed books in the library
-    public List<Book> getAllBorrowedBooks(){
-        // iterate the borrowedBooks Map and check if the book is borrowed
-        List<Book> borrowedBooks = new ArrayList<>();
-        // iterate the borrowedBooks Map and add the books to the list
-        for(List<Book> books: this.borrowedBooks.values()){
-            for(Book book: books){
-                if(!book.isAvailable()){
-                    borrowedBooks.add(book);
-                }
-             }
+    @JsonProperty("borrowedBooksList")
+    public List<Book> getAllBorrowedBooks() {
+        List<Book> allBorrowed = new ArrayList<>();
+        for (List<Book> books : borrowedBooks.values()) {
+            allBorrowed.addAll(books);
         }
-        return borrowedBooks;
-
+        return allBorrowed;
     }
 
     /////////////////////////////////////Get all borrowers in the library and a list of books they have borrowed//////////////////////////////////// 
 
     // Get all borrowers in the library and a list of books they have borrowed
-    public Map<String,List<Book>> getBorrowerReport() {
-        Map<String,List<Book>> borrowers = new HashMap<>();
-        // iterate the borrowedBooks Map and add the books to the list
-        for(Map.Entry<String,List<Book>> entry: borrowedBooks.entrySet()){
-            String borrowerName = entry.getKey();
-            List<Book> booksBorrowed = entry.getValue();
-
-            borrowers.put(borrowerName,booksBorrowed);
-        }
-        return borrowers;
+    @JsonProperty("borrowerReport")
+    public Map<String, List<Book>> getBorrowerReport() {
+        return new HashMap<>(borrowedBooks);
     }
 
     /////////////////////////////////////Get the total number of books in the library//////////////////////////////////// 
 
     // Get the total number of books in the library
+    @JsonIgnore
     public int getTotalBookCount(){
         return books.size();
     }
@@ -273,14 +266,20 @@ public class Library implements Serializable {
     /////////////////////////////////////Get the number of borrowed books in the library//////////////////////////////////// 
 
     // Get the number of borrowed books in the library
-    public int getNumberOfBorrowedBooks(){
-        return getAllBorrowedBooks().size();    
+    @JsonIgnore
+    public int getNumberOfBorrowedBooks() {
+        return getAllBorrowedBooks().size();
     }
 
     /////////////////////////////////////Get the number of borrowers in the library//////////////////////////////////// 
 
     // Get the number of borrowers in the library
-    public int getNumberOfBorrowers(){
-        return getBorrowerReport().size();
+    @JsonIgnore
+    public int getNumberOfBorrowers() {
+        return borrowedBooks.size();
+    }
+
+    public List<Book> getBooks() {
+        return new ArrayList<>(books);
     }
 }

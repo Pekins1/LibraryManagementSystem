@@ -10,7 +10,7 @@ import java.util.Scanner;
 import java.util.InputMismatchException;
 
 public class LibraryApplication {
-    private static final String DATA_FILE = "library.data";
+    private static final String DATA_FILE = "library.json";
     private static Library library;
     private static Scanner scanner;
 
@@ -27,7 +27,7 @@ public class LibraryApplication {
         try{
             library = FileUtils.loadLibraryFromFile(DATA_FILE);
             System.out.println("Library data loaded successfully.");
-        }catch(IOException | ClassNotFoundException e){
+        }catch(IOException e){
             // If no data file exists or there's an error, create a new library
             System.out.println("Creating new library...");
             library = new Library();

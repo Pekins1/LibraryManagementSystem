@@ -1,14 +1,16 @@
 package model;
 
+import util.FileUtils;
 import java.util.List;
 import java.util.ArrayList;
 import exception.BookAlreadyExistsException;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 
 
-class LibraryDuplicateIsbnTest {
+class LibraryServiceTest {
 
     @Test
     void addingTheSameIsbnTwiceThrows() throws Exception{
@@ -66,6 +68,32 @@ class LibraryDuplicateIsbnTest {
         // should pass
         assertFalse(first.isAvailable(),"Book should be set to unavailabl on borrow");
 
+    }
+
+    @Test
+    void CheckIfJsonSerializationAndDeserializationWorks() throws Exception {
+        Library lib = new Library();
+        String DATA_FILE = "library.json";
+        Book book = new Book(
+            "The Pragmatic Programmer",
+            "Andrew Hunt and David Thomas",
+            "Software Development",
+            "978-0201616224",
+            1999
+        );
+
+        lib.addBook(book);
+        assertTrue(lib.getBooks().contains(book), "Book should be in library after adding");
+
+        // Save to file (Serializes)
+        FileUtils.saveLibraryToFile(lib, DATA_FILE);
+        
+        // Load from file(Deserializes)
+        Library loadedLib = FileUtils.loadLibraryFromFile(DATA_FILE);
+        
+        // Verify the loaded library contains the same book
+        assertTrue(loadedLib.getBooks().contains(book), "Loaded library should contain the same book");
+        assertEquals(1, loadedLib.getBooks().size(), "Loaded library should have one book");
     }
 
     

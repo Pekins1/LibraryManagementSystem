@@ -2,23 +2,41 @@ package model;
 
 import java.io.Serializable;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Book implements Serializable {
 
-    private String title;
-    private String author;
-    private String genre;
-    private String isbn;
-    private int publishedYear;
+    @JsonProperty("title")
+    private final String title;
+    
+    @JsonProperty("author")
+    private final String author;
+    
+    @JsonProperty("genre")
+    private final String genre;
+    
+    @JsonProperty("isbn")
+    private final String isbn;
+    
+    @JsonProperty("publishedYear")
+    private final int publishedYear;
+    
+    @JsonProperty("available")
     private boolean isAvailable;
 
-    public Book(String title, String author, String genre, String isbn, int year){
+    @JsonCreator
+    public Book(@JsonProperty("title") String title,
+                @JsonProperty("author") String author,
+                @JsonProperty("genre") String genre,
+                @JsonProperty("isbn") String isbn,
+                @JsonProperty("publishedYear") int publishedYear) {
         this.title = title;
         this.author = author;
         this.genre = genre;
         this.isbn = isbn;
-        this.publishedYear = year;
-        // this.isAvailable = true;
+        this.publishedYear = publishedYear;
+        this.isAvailable = false;
     }
 
     // Getters for retrieving the values of the attributes
@@ -44,26 +62,6 @@ public class Book implements Serializable {
 
 
     // Setters for updating the values of the attributes
-    public void setTitle(String title){
-        this.title = title;
-    }
-
-    public void setAuthor(String author){
-        this.author = author;
-    }
-
-    public void setGenre(String genre){
-        this.genre = genre;
-    }
-
-    public void setISBN(String isbn){
-        this.isbn = isbn;
-    }
-
-    public void setPublishedYear(int year){
-        this.publishedYear = year;
-    }
-
     public void setIsAvailable(boolean isAvailable){
         this.isAvailable = isAvailable;
     }
