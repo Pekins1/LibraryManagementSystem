@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.ArrayList;
 import exception.BookAlreadyExistsException;
 import org.junit.jupiter.api.Test;
+import java.nio.file.Path;
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class LibraryServiceTest {
 
     @Test
-    void addingTheSameIsbnTwiceThrows() throws Exception{
+    void shouldPreventDuplicateIsbn() throws Exception{
         Library lib = new Library();
 
         Book first = new Book("Clean Code", "R. C. Martin", "Software", "978-0132350884", 2008);
@@ -40,7 +42,8 @@ class LibraryServiceTest {
         bookList.add(third);
 
         // this should fail
-        assertThrows(BookAlreadyExistsException.class,() -> lib.addBooks(bookList));
+        assertThrows(BookAlreadyExistsException.class,() -> lib.addBooks(bookList),
+            "Adding a duplicate ISBN should throw");
     }
     @Test
     void newBookStartsUnavailableUntilAdded() {
@@ -71,9 +74,9 @@ class LibraryServiceTest {
     }
 
     @Test
-    void CheckIfJsonSerializationAndDeserializationWorks() throws Exception {
+    void roundTripPersistsData(@TempDir Path tmp) throws Exception {
         Library lib = new Library();
-        String DATA_FILE = "library.json";
+        Path file = tmp.resolve("lib.json");
         Book book = new Book(
             "The Pragmatic Programmer",
             "Andrew Hunt and David Thomas",
@@ -86,10 +89,10 @@ class LibraryServiceTest {
         assertTrue(lib.getBooks().contains(book), "Book should be in library after adding");
 
         // Save to file (Serializes)
-        FileUtils.saveLibraryToFile(lib, DATA_FILE);
+        FileUtils.saveLibraryToFile(lib, file.toString());
         
         // Load from file(Deserializes)
-        Library loadedLib = FileUtils.loadLibraryFromFile(DATA_FILE);
+        Library loadedLib = FileUtils.loadLibraryFromFile(file.toString());
         
         // Verify the loaded library contains the same book
         assertTrue(loadedLib.getBooks().contains(book), "Loaded library should contain the same book");
