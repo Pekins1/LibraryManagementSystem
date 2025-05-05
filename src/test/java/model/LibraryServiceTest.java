@@ -25,7 +25,6 @@ class LibraryServiceTest {
 
         //should fail: same ISBN already present
         assertThrows(BookAlreadyExistsException.class, () -> lib.addBook(second));
-
     }
 
     @Test

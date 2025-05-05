@@ -1,0 +1,8 @@
+{
+  "allAvailableBooks" : [ ],
+  "allBooks" : [ ],
+  "books" : [ ],
+  "borrowerMap" : { },
+  "borrowerReport" : { },
+  "borrowedBooksList" : [ ]
+}

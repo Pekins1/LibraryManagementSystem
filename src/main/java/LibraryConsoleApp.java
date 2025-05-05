@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.InputMismatchException;
 
-public class LibraryApplication {
+public class LibraryConsoleApp {
     private static final String DATA_FILE = "library.json";
     private static Library library;
     private static Scanner scanner;
