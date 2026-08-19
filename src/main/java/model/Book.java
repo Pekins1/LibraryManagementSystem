@@ -4,26 +4,45 @@ import java.io.Serializable;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
+@Entity
+@Table(name = "books")
 public class Book implements Serializable {
 
-    @JsonProperty("title")
-    private final String title;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String title;
     
-    @JsonProperty("author")
-    private final String author;
+    @Column(nullable = false)
+    private String author;
     
-    @JsonProperty("genre")
-    private final String genre;
+    @Column(nullable = false)
+    private String genre;
     
-    @JsonProperty("isbn")
-    private final String isbn;
+    @Column(nullable = false, unique = true)
+    private String isbn;
     
-    @JsonProperty("publishedYear")
-    private final int publishedYear;
+    @Column(name = "published_year", nullable = false)
+    private int publishedYear;
     
-    @JsonProperty("available")
+    @Column(name = "is_available", nullable = false)
     private boolean isAvailable;
+
+    @Column(name = "times_borrowed", nullable = false)
+    private int timesBorrowed;
+
+    protected Book() {
+        // Required by JPA.
+    }
 
     @JsonCreator
     public Book(@JsonProperty("title") String title,
@@ -37,6 +56,11 @@ public class Book implements Serializable {
         this.isbn = isbn;
         this.publishedYear = publishedYear;
         this.isAvailable = false;
+        this.timesBorrowed = 0;
+    }
+
+    public Long getId() {
+        return id;
     }
 
     // Getters for retrieving the values of the attributes
@@ -58,6 +82,10 @@ public class Book implements Serializable {
 
     public int getPublishedYear(){
         return this.publishedYear;
+    }
+
+    public int getTimesBorrowed() {
+        return this.timesBorrowed;
     }
 
 
