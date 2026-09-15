@@ -2,6 +2,7 @@ package model;
 
 import java.io.Serializable;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -110,13 +111,16 @@ public class Book implements Serializable {
         this.publishedYear = publishedYear;
     }
 
+    @JsonProperty("available")
+    @JsonAlias("isAvailable")
     public void setIsAvailable(boolean isAvailable){
-        this.isAvailable = isAvailable;
+    this.isAvailable = isAvailable;
     }
 
     // Method to check if the book is available
-      public boolean isAvailable(){
-        return this.isAvailable;
+    @JsonProperty("available")
+    public boolean isAvailable(){
+    return this.isAvailable;
     }
 
     // Method to increment the timesBorrowed attribute
