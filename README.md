@@ -80,7 +80,7 @@ Data is automatically saved when exiting the application (option 0)
 
 ### Requirements
 
-- Java JDK 25
+- Java JDK 21
 
 ### Object Model
 

@@ -277,7 +277,7 @@ public class LibraryApplication {
                List<Book> books = entry.getValue();
                for(Book book: books){
                     System.out.println(" - " + book.getTitle() + " by " + book.getAuthor() 
-                    + "( ISBN: " + book.getISBN()+ ")");
+                    + "( ISBN: " + book.getIsbn()+ ")");
                }
             }
         }
@@ -372,7 +372,7 @@ public class LibraryApplication {
         System.out.println("\nTitle: " + book.getTitle());
         System.out.println("Author: " + book.getAuthor());
         System.out.println("Genre: " + book.getGenre());
-        System.out.println("ISBN: " + book.getISBN());
+        System.out.println("ISBN: " + book.getIsbn());
         System.out.println("Published Year: " + book.getPublishedYear());
         System.out.println("Availability: " + (book.isAvailable() ? "Available" : "Borrowed"));
     }
@@ -387,5 +387,6 @@ public class LibraryApplication {
             System.out.println("Error saving library data: " + e.getMessage());
         }
     }
+
 
 }

@@ -4,12 +4,8 @@ import java.io.Serializable;
 import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 
 @Entity
 @Table(name = "books")
@@ -58,12 +54,13 @@ public class Book implements Serializable {
         this.isAvailable = false;
         this.timesBorrowed = 0;
     }
+    
 
+    // Getters for retrieving the values of the attributes
     public Long getId() {
         return id;
     }
 
-    // Getters for retrieving the values of the attributes
     public String getTitle(){
         return this.title;
     }
@@ -76,7 +73,7 @@ public class Book implements Serializable {
         return this.genre;
     }
 
-    public String getISBN(){
+    public String getIsbn(){
         return this.isbn;
     }
 
@@ -90,6 +87,29 @@ public class Book implements Serializable {
 
 
     // Setters for updating the values of the attributes
+    public void setId(Long id){
+        this.id = id;
+    }
+    public void setTitle(String title){
+        this.title = title;
+    }
+
+    public void setAuthor(String author){
+        this.author = author;
+    }
+
+    public void setGenre(String genre){
+        this.genre = genre;
+    }
+
+    public void setIsbn(String isbn){
+        this.isbn = isbn;
+    }
+
+    public void setPublishedYear(int publishedYear){
+        this.publishedYear = publishedYear;
+    }
+
     public void setIsAvailable(boolean isAvailable){
         this.isAvailable = isAvailable;
     }
@@ -97,6 +117,11 @@ public class Book implements Serializable {
     // Method to check if the book is available
       public boolean isAvailable(){
         return this.isAvailable;
+    }
+
+    // Method to increment the timesBorrowed attribute
+    public void incrementTimesBorrowed() {
+        this.timesBorrowed++;
     }
 
     // Equals method to compare two books
