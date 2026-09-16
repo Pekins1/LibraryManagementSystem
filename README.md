@@ -31,7 +31,7 @@ src/main/java/
 
 ## Setup Instructions
 
-1. Ensure you have Java JDK 8+ installed
+1. Ensure you have Java JDK 25 installed and selected as `JAVA_HOME`
 2. Clone the repository or download the source code
 3. Compile the project:
    ```
@@ -80,7 +80,7 @@ Data is automatically saved when exiting the application (option 0)
 
 ### Requirements
 
-- Java JDK 8 or higher
+- Java JDK 21
 
 ### Object Model
 

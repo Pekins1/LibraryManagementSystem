@@ -51,7 +51,7 @@ public final class FileUtils {
 
             // Write book data
             for(Book book : books){
-                writer.println(book.getISBN() + "," + 
+                writer.println(book.getIsbn() + "," + 
                 book.getTitle() + "," +
                 book.getAuthor() + "," +
                 book.getGenre() + "," +

@@ -2,28 +2,44 @@ package model;
 
 import java.io.Serializable;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
 
+
+@Entity
+@Table(name = "books")
 public class Book implements Serializable {
 
-    @JsonProperty("title")
-    private final String title;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String title;
     
-    @JsonProperty("author")
-    private final String author;
+    @Column(nullable = false)
+    private String author;
     
-    @JsonProperty("genre")
-    private final String genre;
+    @Column(nullable = false)
+    private String genre;
     
-    @JsonProperty("isbn")
-    private final String isbn;
+    @Column(nullable = false, unique = true)
+    private String isbn;
     
-    @JsonProperty("publishedYear")
-    private final int publishedYear;
+    @Column(name = "published_year", nullable = false)
+    private int publishedYear;
     
-    @JsonProperty("available")
+    @Column(name = "is_available", nullable = false)
     private boolean isAvailable;
+
+    @Column(name = "times_borrowed", nullable = false)
+    private int timesBorrowed;
+
+    protected Book() {
+        // Required by JPA.
+    }
 
     @JsonCreator
     public Book(@JsonProperty("title") String title,
@@ -37,9 +53,15 @@ public class Book implements Serializable {
         this.isbn = isbn;
         this.publishedYear = publishedYear;
         this.isAvailable = false;
+        this.timesBorrowed = 0;
     }
+    
 
     // Getters for retrieving the values of the attributes
+    public Long getId() {
+        return id;
+    }
+
     public String getTitle(){
         return this.title;
     }
@@ -52,7 +74,7 @@ public class Book implements Serializable {
         return this.genre;
     }
 
-    public String getISBN(){
+    public String getIsbn(){
         return this.isbn;
     }
 
@@ -60,15 +82,50 @@ public class Book implements Serializable {
         return this.publishedYear;
     }
 
+    public int getTimesBorrowed() {
+        return this.timesBorrowed;
+    }
+
 
     // Setters for updating the values of the attributes
+    public void setId(Long id){
+        this.id = id;
+    }
+    public void setTitle(String title){
+        this.title = title;
+    }
+
+    public void setAuthor(String author){
+        this.author = author;
+    }
+
+    public void setGenre(String genre){
+        this.genre = genre;
+    }
+
+    public void setIsbn(String isbn){
+        this.isbn = isbn;
+    }
+
+    public void setPublishedYear(int publishedYear){
+        this.publishedYear = publishedYear;
+    }
+
+    @JsonProperty("available")
+    @JsonAlias("isAvailable")
     public void setIsAvailable(boolean isAvailable){
-        this.isAvailable = isAvailable;
+    this.isAvailable = isAvailable;
     }
 
     // Method to check if the book is available
-      public boolean isAvailable(){
-        return this.isAvailable;
+    @JsonProperty("available")
+    public boolean isAvailable(){
+    return this.isAvailable;
+    }
+
+    // Method to increment the timesBorrowed attribute
+    public void incrementTimesBorrowed() {
+        this.timesBorrowed++;
     }
 
     // Equals method to compare two books

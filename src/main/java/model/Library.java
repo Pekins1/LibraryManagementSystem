@@ -36,7 +36,7 @@ public class Library implements Serializable {
     public void addBook(Book book) throws BookAlreadyExistsException {
         // Check for duplicate ISBN
         boolean duplicate = books.stream()
-            .anyMatch(b -> b.getISBN().equals(book.getISBN()));
+            .anyMatch(b -> b.getIsbn().equals(book.getIsbn()));
         
         if(duplicate) {
             throw new BookAlreadyExistsException("Book with same ISBN already exists in the library.");
@@ -53,14 +53,14 @@ public class Library implements Serializable {
         for(Book book : books) {
             boolean duplicateInInput = books.stream()
                 .filter(b -> b != book) // Don't compare with itself
-                .anyMatch(b -> b.getISBN().equals(book.getISBN()));
+                .anyMatch(b -> b.getIsbn().equals(book.getIsbn()));
             if(duplicateInInput) {
                 throw new BookAlreadyExistsException(book + ": Book with same ISBN found in the input list.");
             }
             
             // Check against existing books in library
             boolean duplicateInLibrary = this.books.stream()
-                .anyMatch(b -> b.getISBN().equals(book.getISBN()));
+                .anyMatch(b -> b.getIsbn().equals(book.getIsbn()));
             if(duplicateInLibrary) {
                 throw new BookAlreadyExistsException(book + ": Book with same ISBN already exists in the library.");
             }
@@ -96,7 +96,7 @@ public class Library implements Serializable {
     public Book findBookByISBN(String isbn) throws BookNotFoundException {
         // iterate the list of books and check if the ISBN matches
         for(Book book : books){
-            if(book.getISBN().equals(isbn)){
+            if(book.getIsbn().equals(isbn)){
                 return book;
             }
         }
