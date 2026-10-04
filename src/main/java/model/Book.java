@@ -2,14 +2,17 @@ package model;
 
 import java.io.Serializable;
 import java.util.Objects;
-import com.fasterxml.jackson.annotation.JsonAlias;
+import java.util.ArrayList;
+import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 
 @Entity
-@Table(name = "books")
+@Table(name = "books", uniqueConstraints = {
+    @UniqueConstraint(name = "book_isbn", columnNames = "isbn")
+})
 public class Book implements Serializable {
 
     @Id
@@ -25,17 +28,18 @@ public class Book implements Serializable {
     @Column(nullable = false)
     private String genre;
     
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String isbn;
     
     @Column(name = "published_year", nullable = false)
     private int publishedYear;
     
-    @Column(name = "is_available", nullable = false)
-    private boolean isAvailable;
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BookCopy> copies = new ArrayList<>();
 
-    @Column(name = "times_borrowed", nullable = false)
-    private int timesBorrowed;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BookLifecycleStatus lifecycle;
 
     protected Book() {
         // Required by JPA.
@@ -52,10 +56,18 @@ public class Book implements Serializable {
         this.genre = genre;
         this.isbn = isbn;
         this.publishedYear = publishedYear;
-        this.isAvailable = false;
-        this.timesBorrowed = 0;
+        this.lifecycle = BookLifecycleStatus.ACTIVE;
     }
     
+    public void addCopy(BookCopy copy) {
+        copies.add(copy);
+        copy.setBook(this);
+    }
+
+    public void removeCopy(BookCopy copy) {
+        copies.remove(copy);
+        copy.setBook(null);
+    }
 
     // Getters for retrieving the values of the attributes
     public Long getId() {
@@ -82,8 +94,8 @@ public class Book implements Serializable {
         return this.publishedYear;
     }
 
-    public int getTimesBorrowed() {
-        return this.timesBorrowed;
+    public BookLifecycleStatus getLifecycleStatus(){
+        return this.lifecycle;
     }
 
 
@@ -111,22 +123,10 @@ public class Book implements Serializable {
         this.publishedYear = publishedYear;
     }
 
-    @JsonProperty("available")
-    @JsonAlias("isAvailable")
-    public void setIsAvailable(boolean isAvailable){
-    this.isAvailable = isAvailable;
+    public void setLifecycleStatus(BookLifecycleStatus lifecycle){
+        this.lifecycle = lifecycle;
     }
 
-    // Method to check if the book is available
-    @JsonProperty("available")
-    public boolean isAvailable(){
-    return this.isAvailable;
-    }
-
-    // Method to increment the timesBorrowed attribute
-    public void incrementTimesBorrowed() {
-        this.timesBorrowed++;
-    }
 
     // Equals method to compare two books
     @Override
@@ -148,7 +148,6 @@ public class Book implements Serializable {
     @Override
     public String toString(){
         return "Book{" + "title=" + title + ", author=" + author + ", genre=" + genre
-        + ", ISBN=" + isbn + ", publishedYear=" + publishedYear
-        + ", isAvailable=" + isAvailable + "}";
+        + ", ISBN=" + isbn + ", publishedYear=" + publishedYear + "}";
     }
-} 
+}

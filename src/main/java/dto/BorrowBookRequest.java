@@ -9,7 +9,7 @@ public record BorrowBookRequest(
     Long bookId,
 
     @NotNull 
-    @ Positive
+    @Positive
     Long borrowerId
 ) {
     

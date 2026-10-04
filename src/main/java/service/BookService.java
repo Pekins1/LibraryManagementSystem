@@ -2,21 +2,32 @@ package service;
 
 import dto.CreateBookRequest;
 import dto.UpdateBookRequest;
+import dto.AddBookCopyRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.NotBlank;
 import java.util.*;
 import model.Book;
+import model.BookCopy;
 
 public interface BookService {
       Book createBook(@Valid @NotNull CreateBookRequest request);
 
       List<Book> createBooks(@NotEmpty List<@Valid CreateBookRequest> requests);
 
-      Book getBookById(Long id);
+      BookCopy addCopyToBook(@NotNull @Positive Long bookId, @Valid @NotNull AddBookCopyRequest request);
 
-      Book getBookByIsbn(String isbn);
+      List<BookCopy> getCopiesForBook(@NotNull @Positive Long bookId);
+
+      List<BookCopy> getAvailableCopiesForBook(@NotNull @Positive Long bookId);
+
+      void deleteCopy(@NotNull @Positive Long copyId);
+
+      Book getBookById(@NotNull @Positive Long id);
+
+      Book getBookByIsbn(@NotNull @NotBlank String isbn);
 
       List<Book> getAllBooks();
 
@@ -24,19 +35,21 @@ public interface BookService {
 
       List<Book> getUnavailableBooks();
 
-      List<Book> findBooksByTitle(String title);
+      List<Book> findBooksByTitle(@NotBlank String title);
 
-      List<Book> findBooksByAuthor(String author);
+      List<Book> findBooksByAuthor(@NotBlank String author);
 
-      List<Book> findBooksByGenre(String genre);
+      List<Book> findBooksByGenre(@NotBlank String genre);
 
-      List<Book> findBooksByAuthorAndGenre(String author, String genre);
+      List<Book> findBooksByAuthorAndGenre(@NotBlank String author, @NotBlank String genre);
 
-      List<Book> findBooksByTitleAndAuthor(String title, String author);
+      List<Book> findBooksByTitleAndAuthor(@NotBlank String title, @NotBlank String author);
 
       long countAvailableBooks();
 
       long countUnavailableBooks();
+
+      void archiveBook(@NotNull @Positive Long bookId);
 
       void deleteBook(@NotNull @Positive Long bookId);
 
