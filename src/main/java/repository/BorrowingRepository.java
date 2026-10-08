@@ -3,6 +3,7 @@ package repository;
 import model.Borrowing;
 import model.BorrowingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.time.LocalDate;
 
 import java.util.Optional;
@@ -15,15 +16,27 @@ public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
     long countByBorrowerIdAndStatusIn(Long borrowerId, Collection<BorrowingStatus> statuses);
 
     // Existanse check
-    boolean existsByBookIdAndBorrowerIdAndStatusIn(
-        Long bookId, 
+    boolean existsByBookCopyIdAndBorrowerIdAndStatusIn(
+        Long bookCopyId, 
+        Long borrowerId,
+        Collection<BorrowingStatus> statuses
+    );
+
+    boolean existsByBookCopyBookIdAndBorrowerIdAndStatusIn(
+        Long bookId,
+        Long borrowerId,
+        Collection<BorrowingStatus> statuses
+    );
+
+    Optional<Borrowing> findByBookCopyBookIdAndBorrowerIdAndStatusIn(
+        Long bookId,
         Long borrowerId,
         Collection<BorrowingStatus> statuses
     );
 
     // By borrower and book and status
-    Optional<Borrowing> findByBookIdAndBorrowerIdAndStatusIn(
-        Long bookId, 
+    Optional<Borrowing> findByBookCopyIdAndBorrowerIdAndStatusIn(
+        Long bookCopyId, 
         Long borrowerId, 
         Collection<BorrowingStatus> statuses
     );
@@ -38,9 +51,14 @@ public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
     );
 
     // By book and status
-    Optional<Borrowing> findByBookIdAndStatusIn(
-        Long bookId,
+    Optional<Borrowing> findByBookCopyIdAndStatusIn(
+        Long bookCopyId,
          Collection<BorrowingStatus> statuses
+    );
+
+    Optional<Borrowing> findByBookCopyBookIdAndStatusIn(
+        Long bookId,
+        Collection<BorrowingStatus> statuses
     );
 
     // By status
@@ -53,15 +71,21 @@ public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
     long countByStatus (BorrowingStatus status);
 
     // By book and status
-    boolean existsByBookIdAndStatusIn(
-        Long bookId,
+    boolean existsByBookCopyIdAndStatusIn(
+        Long bookCopyId,
         Collection<BorrowingStatus> statuses
     );
 
-    boolean existsByBookIdAndStatus(
-        Long bookId,
+    boolean existsByBookCopyIdAndStatus(
+        Long bookCopyId,
         BorrowingStatus status
     );
+
+    boolean existsByBookCopyBookIdAndStatusIn(Long bookId, Collection<BorrowingStatus> statuses);
+
+    boolean existsByBookCopyBookId(Long bookId);
+
+    boolean existsByBookCopyId(Long bookCopyId);
     // Reports & dates
     List<Borrowing> findByBorrowDateBetween(LocalDate start, LocalDate end);
     List<Borrowing> findByDueDateBetween(LocalDate start, LocalDate end);
@@ -72,4 +96,6 @@ public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
         LocalDate date, 
         Collection<BorrowingStatus> statuses
     );
+
+
 }

@@ -2,6 +2,11 @@ package repository;
 
 import model.Borrower;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
 
 import java.util.Optional;
 import java.util.List;
@@ -10,6 +15,10 @@ public interface BorrowerRepository extends JpaRepository<Borrower, Long> {
     Optional<Borrower> findByEmail(String email);
 
     List<Borrower> findByName(String name);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM Borrower b WHERE b.id = :borrowerId")
+    Optional<Borrower> findByIdForUpdate(@Param("borrowerId") Long borrowerId);
 
     // Case-insensitive search (recommended)
 

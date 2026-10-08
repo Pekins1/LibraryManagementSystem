@@ -1,21 +1,38 @@
 package service.impl;
 
+import dto.AddBookCopyRequest;
 import dto.CreateBookRequest;
 import dto.UpdateBookRequest;
 import exception.BookAlreadyExistsException;
 import exception.BookNotFoundException;
+import exception.BookWithActiveLoanCannotBeArchivedException;
+import exception.InvalidCopyStateException;
 import model.Book;
+import model.BookCondition;
+import model.BookCopy;
+import model.BookLifecycleStatus;
 import model.BorrowingStatus;
 import exception.BookDeletionNotAllowedException;
+import exception.BookHasHistoryException;
+import exception.BookNotAvailableException;
+import exception.BookCopyAlreadyExistException;
+import exception.BookCopyDeletionNotAllowedException;
+import exception.BookCopyNotFoundException;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import repository.BookCopyRepository;
 import repository.BookRepository;
 import repository.BorrowingRepository;
 import service.impl.BookServiceImpl;
 
+import java.time.LocalDate;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,17 +42,39 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 
+
+
 @ExtendWith(MockitoExtension.class)
 class BookServiceImplTest {
 
     @Mock 
     private BookRepository bookRepository;
 
+    @Mock
+    private BookCopyRepository bookCopyRepository;
+
     @Mock 
     private BorrowingRepository borrowingRepository;
-
-    @InjectMocks
+    
     private BookServiceImpl bookService;
+    private Clock fixedClock;
+
+    @BeforeEach 
+    void setUp() {
+        fixedClock = Clock.fixed(
+            LocalDate.of(2026, 10, 2)
+                .atStartOfDay(ZoneId.systemDefault())
+                .toInstant(),
+            ZoneId.systemDefault()
+        );
+
+        bookService = new BookServiceImpl(
+            bookRepository, 
+            bookCopyRepository,
+            borrowingRepository, 
+            fixedClock
+        );
+    }
 
     @Test
     void createBook_shouldSaveBookWhenIsbnDoesNotExist() {
@@ -54,20 +93,18 @@ class BookServiceImplTest {
             "978-0132350884",
             2008 
         );
-        savedBook.setIsAvailable(true);
 
         when(bookRepository.existsByIsbn(request.isbn())).thenReturn(false);
-        when(bookRepository.save(any(Book.class))).thenReturn(savedBook);
+        when(bookRepository.saveAndFlush(any(Book.class))).thenReturn(savedBook);
 
         Book result = bookService.createBook(request);
 
         assertNotNull(result);
         assertEquals("Clean Code",result.getTitle());
         assertEquals("978-0132350884",result.getIsbn());
-        assertTrue(result.isAvailable());
 
         verify(bookRepository).existsByIsbn(request.isbn());
-        verify(bookRepository).save(any(Book.class));
+        verify(bookRepository).saveAndFlush(any(Book.class));
 
     }
 
@@ -88,9 +125,309 @@ class BookServiceImplTest {
         );
 
         verify(bookRepository).existsByIsbn(request.isbn());
-        verify(bookRepository, never()).save(any(Book.class));
+        verify(bookRepository, never()).saveAndFlush(any(Book.class));
     }
     
+    @Test 
+    void addCopyToBook_shouldThrowWhenBookIsArchived(){
+        Long bookId = 1L;
+
+        AddBookCopyRequest request = new AddBookCopyRequest(
+            "LMS-9780132350884-01",
+            BookCondition.NEW,
+            LocalDate.of(2026,10,01)
+        );
+
+        Book savedBook = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008 
+        );
+
+        savedBook.setId(bookId);
+        savedBook.setLifecycleStatus(BookLifecycleStatus.ARCHIVED);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(savedBook));
+
+        assertThrows(BookNotAvailableException.class, 
+            () -> bookService.addCopyToBook(bookId, request)
+        );
+
+        verify(bookRepository).findById(bookId);
+        verify(bookCopyRepository, never()).saveAndFlush(any(BookCopy.class));
+
+    }
+
+    @Test
+    void addCopyToBook_shouldThrowWhenBarcodeAlreadyExist(){
+         Long bookId = 1L;
+
+        AddBookCopyRequest request = new AddBookCopyRequest(
+            "LMS-9780132350884-01",
+            BookCondition.NEW,
+            LocalDate.of(2026,10,01)
+        );
+
+        Book savedBook = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008 
+        );
+
+        savedBook.setId(bookId);
+        savedBook.setLifecycleStatus(BookLifecycleStatus.ACTIVE);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(savedBook));
+        when(bookCopyRepository.existsByBarcode(request.barcode())).thenReturn(true);
+
+        assertThrows(BookCopyAlreadyExistException.class,
+            () -> bookService.addCopyToBook(bookId, request)
+        );
+
+        verify(bookRepository).findById(bookId);
+        verify(bookCopyRepository).existsByBarcode(request.barcode());
+        verify(bookCopyRepository, never()).saveAndFlush(any(BookCopy.class));
+
+    }
+
+    @Test 
+    void addCopyToBook_shouldThrowWhenAcquiredDateIsAfutureDate(){
+          Long bookId = 1L;
+
+        AddBookCopyRequest request = new AddBookCopyRequest(
+            "LMS-9780132350884-01",
+            BookCondition.NEW,
+            LocalDate.of(2026,10,03)
+        );
+
+        Book savedBook = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008 
+        );
+        savedBook.setId(bookId);
+        savedBook.setLifecycleStatus(BookLifecycleStatus.ACTIVE);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(savedBook));
+        when(bookCopyRepository.existsByBarcode(request.barcode())).thenReturn(false);
+
+        assertThrows(InvalidCopyStateException.class,
+            () -> bookService.addCopyToBook(bookId, request)
+        );
+
+        verify(bookRepository).findById(bookId);
+        verify(bookCopyRepository).existsByBarcode(request.barcode());
+        verify(bookCopyRepository, never()).saveAndFlush(any(BookCopy.class));
+    }
+
+    @Test 
+    void addCopyToBook_shouldSaveCopyWhenAdded(){
+        Long bookId = 1L;
+
+        AddBookCopyRequest request = new AddBookCopyRequest(
+            "LMS-9780132350884-01",
+            BookCondition.LIKE_NEW,
+            LocalDate.of(2026,10,02)
+        );
+
+        Book savedBook = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008 
+        );
+        savedBook.setId(bookId);
+        savedBook.setLifecycleStatus(BookLifecycleStatus.ACTIVE);
+
+        BookCopy savedCopy = new BookCopy(
+            request.barcode(),
+            request.condition(),
+            request.acquiredDate()
+        );
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(savedBook));
+        when(bookCopyRepository.existsByBarcode(request.barcode())).thenReturn(false);
+        when(bookCopyRepository.saveAndFlush(any(BookCopy.class))).thenReturn(savedCopy);
+
+        BookCopy result = bookService.addCopyToBook(bookId, request);
+        
+        assertNotNull(result);
+        assertEquals(request.barcode(), result.getBarcode());
+        assertEquals(request.condition(), result.getCondition());
+        assertEquals(request.acquiredDate(), result.getAcquiredDate());
+        assertTrue(savedCopy.isAvailable());
+        assertEquals(0, savedCopy.getTimesBorrowed());
+
+
+        verify(bookRepository).findById(bookId);
+        verify(bookCopyRepository).existsByBarcode(request.barcode());
+        verify(bookCopyRepository).saveAndFlush(any(BookCopy.class));
+
+    }
+
+    @Test 
+    void archiveBook_shouldThrowWhenBookIsBorrowed(){
+        Long bookId = 4L;
+
+        Book book = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008  
+        );
+        book.setId(bookId);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(borrowingRepository.existsByBookCopyBookIdAndStatusIn(
+            eq(bookId),
+            eq(List.of(BorrowingStatus.ACTIVE,
+                BorrowingStatus.OVERDUE))
+        )).thenReturn(true);
+
+        assertThrows(BookWithActiveLoanCannotBeArchivedException.class,
+            () -> bookService.archiveBook(bookId)
+        );
+
+        verify(bookRepository).findById(bookId);
+        verify(borrowingRepository).existsByBookCopyBookIdAndStatusIn(eq(bookId),eq(List.of(BorrowingStatus.ACTIVE,BorrowingStatus.OVERDUE)));
+        verify(bookRepository, never()).saveAndFlush(any(Book.class));
+
+    }
+
+    @Test 
+    void archiveBook_shouldSaveWhenBookIsNotBorrowed(){
+        Long bookId = 4L;
+
+        Book book = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008  
+        );
+        book.setId(bookId);
+
+        book.setLifecycleStatus(BookLifecycleStatus.ACTIVE);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(borrowingRepository.existsByBookCopyBookIdAndStatusIn(
+            eq(bookId),
+            eq(List.of(BorrowingStatus.ACTIVE,
+                BorrowingStatus.OVERDUE))
+        )).thenReturn(false);
+        when(bookRepository.saveAndFlush(any(Book.class))).thenReturn(book);
+
+        bookService.archiveBook(bookId);
+
+        assertEquals(BookLifecycleStatus.ARCHIVED, book.getLifecycleStatus());
+
+        verify(bookRepository).findById(bookId);
+        verify(borrowingRepository).existsByBookCopyBookIdAndStatusIn(eq(bookId),eq(List.of(BorrowingStatus.ACTIVE,BorrowingStatus.OVERDUE)));
+        verify(bookRepository).saveAndFlush(any(Book.class));
+    }
+
+
+    @Test 
+    void deleteCopy_shouldThrowWhenCopyIsNotFound(){
+        Long copyId = 5L;
+
+       when(bookCopyRepository.findById(copyId)).thenReturn(Optional.empty());
+
+       assertThrows(BookCopyNotFoundException.class,
+            () -> bookService.deleteCopy(copyId)
+       );
+
+       verify(bookCopyRepository).findById(copyId);
+       verify(bookCopyRepository, never()).delete(any(BookCopy.class));
+        
+    }
+
+    @Test 
+    void deleteCopy_shouldThrowWhenCopyIsBorrowed(){
+        Long copyId = 5L;
+
+        BookCopy bookCopy = new BookCopy(
+            "LMS-9780132350884-01", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,03)
+        );
+        bookCopy.setIsAvailable(false);
+        bookCopy.setTimesBorrowed(2);
+
+        bookCopy.setId(copyId);
+
+        when(bookCopyRepository.findById(copyId)).thenReturn(Optional.of(bookCopy));
+        
+        assertThrows(BookCopyDeletionNotAllowedException.class,
+            () -> bookService.deleteCopy(copyId)
+        );
+
+        verify(bookCopyRepository).findById(copyId);
+        verify(bookCopyRepository, never()).delete(any(BookCopy.class));
+    }
+
+    @Test 
+    void deleteCopy_shouldThrowWhenCopyHasBorrowingHistory(){
+        Long copyId = 5L;
+
+        BookCopy bookCopy = new BookCopy(
+            "LMS-9780132350884-01", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,03)
+        );
+        bookCopy.setIsAvailable(true);
+        bookCopy.setTimesBorrowed(2);
+
+        bookCopy.setId(copyId);
+
+        when(bookCopyRepository.findById(copyId)).thenReturn(Optional.of(bookCopy));
+        when(borrowingRepository.existsByBookCopyId(copyId)).thenReturn(true);
+
+        assertThrows(BookCopyDeletionNotAllowedException.class,
+            () -> bookService.deleteCopy(copyId)
+        );
+
+        verify(bookCopyRepository).findById(copyId);
+        verify(borrowingRepository).existsByBookCopyId(copyId);
+        verify(bookCopyRepository, never()).delete(any(BookCopy.class));
+    }
+
+     @Test 
+    void deleteCopy_shouldDeleteSuccessfully(){
+        Long copyId = 5L;
+
+        BookCopy bookCopy = new BookCopy(
+            "LMS-9780132350884-01", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,03)
+        );
+        bookCopy.setIsAvailable(true);
+        bookCopy.setTimesBorrowed(0);
+
+        bookCopy.setId(copyId);
+
+        when(bookCopyRepository.findById(copyId)).thenReturn(Optional.of(bookCopy));
+        when(borrowingRepository.existsByBookCopyId(copyId)).thenReturn(false);
+
+        bookService.deleteCopy(copyId);
+
+        assertTrue(bookCopy.isAvailable());
+        assertEquals(0, bookCopy.getTimesBorrowed());
+
+        verify(bookCopyRepository).findById(copyId);
+        verify(borrowingRepository).existsByBookCopyId(copyId);
+        verify(bookCopyRepository).delete(bookCopy);
+    }
+
+
     @Test
     void deleteBook_shouldThrowWhenBookIsCurrentlyBorrowed(){
         Long bookId = 1L;
@@ -105,7 +442,7 @@ class BookServiceImplTest {
         book.setId(bookId);
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
-        when(borrowingRepository.existsByBookIdAndStatusIn(
+        when(borrowingRepository.existsByBookCopyBookIdAndStatusIn(
             eq(bookId),
             eq(List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE))
         )).thenReturn(true);
@@ -116,10 +453,80 @@ class BookServiceImplTest {
 
 
         verify(bookRepository).findById(bookId);
-        verify(borrowingRepository).existsByBookIdAndStatusIn(
+        verify(borrowingRepository).existsByBookCopyBookIdAndStatusIn(
             eq(bookId),
             eq(List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE))
         );
+        
+        verify(bookRepository, never()).delete(any(Book.class));
+    }
+
+    @Test 
+    void deleteBook_shouldThrowWhenBookHasBorrowHistory(){
+         Long bookId = 1L;
+
+        Book book = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008  
+        );
+        book.setId(bookId);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(borrowingRepository.existsByBookCopyBookIdAndStatusIn(
+            eq(bookId),
+            eq(List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE))
+        )).thenReturn(false);
+        when(borrowingRepository.existsByBookCopyBookId(bookId)).thenReturn(true);
+
+        assertThrows(BookHasHistoryException.class,
+            () -> bookService.deleteBook(bookId)
+        );
+        
+        verify(bookRepository).findById(bookId);
+        verify(borrowingRepository).existsByBookCopyBookIdAndStatusIn(
+            eq(bookId),
+            eq(List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE))
+        );
+        verify(borrowingRepository).existsByBookCopyBookId(bookId);
+        
+        verify(bookRepository, never()).delete(any(Book.class));
+    }
+
+    @Test 
+    void deleteBook_shouldThrowWhenBookHasCopies(){
+         Long bookId = 1L;
+
+        Book book = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008  
+        );
+        book.setId(bookId);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(borrowingRepository.existsByBookCopyBookIdAndStatusIn(
+            eq(bookId),
+            eq(List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE))
+        )).thenReturn(false);
+        when(borrowingRepository.existsByBookCopyBookId(bookId)).thenReturn(false);
+        when(bookCopyRepository.existsByBookId(bookId)).thenReturn(true);
+
+        assertThrows(BookDeletionNotAllowedException.class,
+            () -> bookService.deleteBook(bookId)
+        );
+        
+        verify(bookRepository).findById(bookId);
+        verify(borrowingRepository).existsByBookCopyBookIdAndStatusIn(
+            eq(bookId),
+            eq(List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE))
+        );
+        verify(borrowingRepository).existsByBookCopyBookId(bookId);
+        verify(bookCopyRepository).existsByBookId(bookId);
         
         verify(bookRepository, never()).delete(any(Book.class));
     }
@@ -138,19 +545,22 @@ class BookServiceImplTest {
         book.setId(bookId);
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
-        when(borrowingRepository.existsByBookIdAndStatusIn(
+        when(borrowingRepository.existsByBookCopyBookIdAndStatusIn(
             eq(bookId),
             eq(List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE))
         )).thenReturn(false);
+        when(borrowingRepository.existsByBookCopyBookId(bookId)).thenReturn(false);
+        when(bookCopyRepository.existsByBookId(bookId)).thenReturn(false);
         
         bookService.deleteBook(bookId);
 
         verify(bookRepository).findById(bookId);
-        verify(borrowingRepository).existsByBookIdAndStatusIn(
+        verify(borrowingRepository).existsByBookCopyBookIdAndStatusIn(
             eq(bookId),
-            eq(List.of(BorrowingStatus.ACTIVE,BorrowingStatus.OVERDUE))
+            eq(List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE))
         );
-
+        verify(borrowingRepository).existsByBookCopyBookId(bookId);
+        verify(bookCopyRepository).existsByBookId(bookId);
         verify(bookRepository).delete(book);
 
     }
@@ -184,7 +594,7 @@ class BookServiceImplTest {
 
         verify(bookRepository).findById(bookId);
         verify(bookRepository).existsByIsbnAndIdNot(updateRequest.isbn(), bookId);
-        verify(bookRepository, never()).save(any(Book.class));
+        verify(bookRepository, never()).saveAndFlush(any(Book.class));
 
         
     }
@@ -211,7 +621,7 @@ class BookServiceImplTest {
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
         when(bookRepository.existsByIsbnAndIdNot(updateRequest.isbn(), bookId)).thenReturn(false);
-        when(bookRepository.save(any(Book.class))).thenReturn(book);
+        when(bookRepository.saveAndFlush(any(Book.class))).thenReturn(book);
 
         Book result = bookService.updateBook(bookId, updateRequest);
 
@@ -223,9 +633,189 @@ class BookServiceImplTest {
 
         verify(bookRepository).findById(bookId);
         verify(bookRepository).existsByIsbnAndIdNot(updateRequest.isbn(), bookId);
-        verify(bookRepository).save(any(Book.class));
+        verify(bookRepository).saveAndFlush(any(Book.class));
 
     }
+
+    @Test 
+    void getCopiesForBook_shouldReturnBookCopiesWhenFound(){
+        Long bookId = 1L;
+
+        Book book = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008 
+        );
+        book.setId(bookId);
+
+        Long firstCopyId = 1L;
+
+        BookCopy firstCopy = new BookCopy(
+            "LMS-9780132350884-01", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,02)
+        );
+        firstCopy.setIsAvailable(false);
+        firstCopy.setTimesBorrowed(2);
+
+        firstCopy.setId(firstCopyId);
+
+        Long secondCopyId = 2L;
+
+        BookCopy secondCopy = new BookCopy(
+            "LMS-9780132350884-02", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,03)
+        );
+        secondCopy.setIsAvailable(true);
+        secondCopy.setTimesBorrowed(0);
+
+        secondCopy.setId(secondCopyId);
+
+        book.addCopy(firstCopy);
+        book.addCopy(secondCopy);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(bookCopyRepository.findByBookId(bookId)).thenReturn(List.of(firstCopy, secondCopy));
+
+        List<BookCopy> result = bookService.getCopiesForBook(bookId);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(firstCopy.getBarcode(), result.get(0).getBarcode());
+        assertEquals(secondCopy.getBarcode(), result.get(1).getBarcode());
+        
+        verify(bookRepository).findById(bookId);
+
+    }
+
+     @Test 
+    void getCopiesForBook_shouldThrowWhenBookDoesNotExist(){
+        Long bookId = 1L;
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
+        
+        assertThrows(BookNotFoundException.class,
+            () -> bookService.getCopiesForBook(bookId)
+        );
+
+        verify(bookRepository).findById(bookId);
+
+    }
+
+    @Test 
+    void getAvailableCopiesForBook_shouldReturnAvailableBookCopiesWhenFound(){
+        Long bookId = 1L;
+
+        Book book = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008 
+        );
+        book.setId(bookId);
+
+        Long firstCopyId = 1L;
+
+        BookCopy firstCopy = new BookCopy(
+            "LMS-9780132350884-01", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,02)
+        );
+        firstCopy.setIsAvailable(false);
+        firstCopy.setTimesBorrowed(2);
+
+        firstCopy.setId(firstCopyId);
+
+        Long secondCopyId = 2L;
+
+        BookCopy secondCopy = new BookCopy(
+            "LMS-9780132350884-02", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,03)
+        );
+        secondCopy.setIsAvailable(true);
+        secondCopy.setTimesBorrowed(0);
+
+        secondCopy.setId(secondCopyId);
+
+        book.addCopy(firstCopy);
+        book.addCopy(secondCopy);
+
+        book.setLifecycleStatus(BookLifecycleStatus.ACTIVE);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(bookCopyRepository.findByBookIdAndIsAvailableTrue(bookId)).thenReturn(List.of(secondCopy));
+
+        List<BookCopy> result = bookService.getAvailableCopiesForBook(bookId);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.get(0).isAvailable());
+        assertEquals(secondCopy.getBarcode(), result.get(0).getBarcode());
+        
+        verify(bookRepository).findById(bookId);
+
+    }
+
+    @Test 
+    void getAvailableCopiesForBook_shouldReturnAnEmptyListWhenBookIsArchived(){
+        Long bookId = 1L;
+
+        Book book = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008 
+        );
+        book.setId(bookId);
+
+
+        Long firstCopyId = 1L;
+
+        BookCopy firstCopy = new BookCopy(
+            "LMS-9780132350884-01", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,02)
+        );
+        firstCopy.setIsAvailable(false);
+        firstCopy.setTimesBorrowed(2);
+
+        firstCopy.setId(firstCopyId);
+
+        Long secondCopyId = 2L;
+
+        BookCopy secondCopy = new BookCopy(
+            "LMS-9780132350884-02", 
+            BookCondition.FAIR,
+            LocalDate.of(2026,10,03)
+        );
+        secondCopy.setIsAvailable(true);
+        secondCopy.setTimesBorrowed(0);
+
+        secondCopy.setId(secondCopyId);
+
+        book.addCopy(firstCopy);
+        book.addCopy(secondCopy);
+
+        book.setLifecycleStatus(BookLifecycleStatus.ARCHIVED);
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+
+        List<BookCopy> result = bookService.getAvailableCopiesForBook(bookId);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    
+        
+        verify(bookRepository).findById(bookId);
+
+    }
+
 
     @Test
     void getBookById_shouldReturnBookWhenFound(){
@@ -397,7 +987,6 @@ class BookServiceImplTest {
             "978-0132350884",
             2008  
         );
-        firstSaved.setIsAvailable(true);
 
         Book secondSaved = new Book(
         "Refactoring",
@@ -406,14 +995,13 @@ class BookServiceImplTest {
         "978-0201485677",
         1999
         );
-        secondSaved.setIsAvailable(true);
         
         List<Book> savedBooks = List.of(firstSaved, secondSaved);
         
 
         when(bookRepository.existsByIsbn(requests.get(0).isbn())).thenReturn(false);
         when(bookRepository.existsByIsbn(requests.get(1).isbn())).thenReturn(false);
-        when(bookRepository.saveAll(any())).thenReturn(savedBooks);
+        when(bookRepository.saveAllAndFlush(any())).thenReturn(savedBooks);
 
         List<Book> result = bookService.createBooks(requests);
 
@@ -422,14 +1010,12 @@ class BookServiceImplTest {
 
         assertEquals("Clean Code", result.get(0).getTitle());
         assertEquals("978-0132350884", result.get(0).getIsbn());
-        assertTrue(result.get(0).isAvailable());
 
         assertEquals("Refactoring", result.get(1).getTitle());
         assertEquals("978-0201485677", result.get(1).getIsbn());
-        assertTrue(result.get(1).isAvailable());
 
         verify(bookRepository).existsByIsbn(requests.get(0).isbn());
         verify(bookRepository).existsByIsbn(requests.get(1).isbn());
-        verify(bookRepository).saveAll(any());
+        verify(bookRepository).saveAllAndFlush(any());
     }
 }

@@ -2,6 +2,7 @@ package dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import model.BookCondition;
 
 public record ReturnBookRequest(
     @NotNull
@@ -10,7 +11,10 @@ public record ReturnBookRequest(
 
     @NotNull
     @Positive
-    Long borrowerId
+    Long borrowerId,
+
+    @NotNull
+    BookCondition condition
 )
 {
     

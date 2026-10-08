@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
+
 public record CreateBookRequest(
         @NotBlank(message = "Title is required")
         String title,
@@ -22,5 +23,6 @@ public record CreateBookRequest(
         @Min(value = 1000, message = "Published year must be at least 1000")
         @Max(value = 2100, message = "Published year must not exceed 2100")
         int publishedYear
+
 ) {
 }

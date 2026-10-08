@@ -15,11 +15,15 @@ public class Borrowing {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false )
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "book_copy_id", nullable = false)
+    private BookCopy bookCopy;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "borrower_id", nullable = false)
     private Borrower borrower;
 
@@ -48,9 +52,12 @@ public class Borrowing {
 
 
     public Borrowing( Book book, 
-             Borrower borrower,
+            BookCopy bookCopy,
+            Borrower borrower,
             LocalDate borrowDate) {
+
         this.book = book;
+        this.bookCopy = bookCopy;
         this.borrower = borrower;
         this.borrowDate = borrowDate;
         this.dueDate = borrowDate.plusDays(14);     // default 14-day loan
@@ -75,6 +82,14 @@ public class Borrowing {
 
     public void setBook(Book book) {
         this.book = book;
+    }
+
+    public BookCopy getBookCopy(){
+        return bookCopy;
+    }
+
+    public void setBookCopy(BookCopy bookCopy){
+        this.bookCopy = bookCopy;
     }
 
     public Borrower getBorrower() {

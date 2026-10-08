@@ -1,14 +1,16 @@
 package service.impl;
 
 import model.Book;
+import model.BookCopy;
 import model.Borrower;
 import model.Borrowing;
 import model.BorrowingStatus;
 
+
 import dto.BorrowBookRequest;
 import dto.ReturnBookRequest;
-
 import repository.BookRepository;
+import repository.BookCopyRepository;
 import repository.BorrowerRepository;
 import repository.BorrowingRepository;
 import service.BorrowService;
@@ -41,6 +43,7 @@ import java.math.RoundingMode;
 @Transactional(readOnly = true)
 public class BorrowServiceImpl implements BorrowService{
     private final BookRepository bookRepository;
+    private final BookCopyRepository bookCopyRepository;
     private final BorrowerRepository borrowerRepository;
     private final BorrowingRepository borrowingRepository;
     static final int MAX_BORROW_LIMIT = 6; // Maximum number of books a borrower can borrow at once
@@ -50,9 +53,14 @@ public class BorrowServiceImpl implements BorrowService{
         List.of(BorrowingStatus.ACTIVE, BorrowingStatus.OVERDUE
     );
 
-    public BorrowServiceImpl(BookRepository bookRepository, BorrowerRepository borrowerRepository,
-        BorrowingRepository borrowingRepository, Clock clock) {
+    public BorrowServiceImpl(
+            BookRepository bookRepository,
+            BookCopyRepository bookCopyRepository, 
+            BorrowerRepository borrowerRepository,
+            BorrowingRepository borrowingRepository, 
+            Clock clock) {
             this.bookRepository = bookRepository;
+            this.bookCopyRepository = bookCopyRepository;
             this.borrowerRepository = borrowerRepository;
             this.borrowingRepository = borrowingRepository;
             this.clock = clock;
@@ -87,15 +95,27 @@ public class BorrowServiceImpl implements BorrowService{
                 "Book with ID " + request.bookId() + " not found."
             ));
 
-        Borrower existingBorrower = borrowerRepository.findById(request.borrowerId())
+        Borrower existingBorrower = borrowerRepository.findByIdForUpdate(request.borrowerId())
             .orElseThrow(() -> new BorrowerNotFoundException(
                 "Borrower with ID " + request.borrowerId() + " not found."
             ));
         
-            // Check if book is available
-        if(!existingBook.isAvailable()){
+        if (existingBook.getLifecycleStatus() != model.BookLifecycleStatus.ACTIVE) {
             throw new BookNotAvailableException(
-                "Book with ID " + request.bookId() + " is not available for borrowing."
+                "Book with ID " + request.bookId() + " is not active for borrowing."
+            );
+        }
+
+        // Check if borrower already has a copy of the book borrowed and not returned
+        boolean alreadyBorrowed = borrowingRepository.existsByBookCopyBookIdAndBorrowerIdAndStatusIn(
+            existingBook.getId(),
+            existingBorrower.getId(),
+            OPEN_STATUSES
+        );
+        
+        if(alreadyBorrowed){
+            throw new BookAlreadyBorrowedException(
+                "Borrower with ID " + request.borrowerId() + " has already borrowed the book with ID " + request.bookId() + " and has not returned it yet."
             );
         }
 
@@ -108,32 +128,26 @@ public class BorrowServiceImpl implements BorrowService{
             throw new BorrowLimitExceededException(
                 "Borrower with ID " + request.borrowerId() + " has reached the borrowing limit."
             );
-        }
+        } 
 
-        // Check if borrower already has the book borrowed and not returned
-        boolean alreadyBorrowed = borrowingRepository.existsByBookIdAndBorrowerIdAndStatusIn(
-            existingBook.getId(),
-            existingBorrower.getId(),
-            OPEN_STATUSES
-        );
-
-        if(alreadyBorrowed){
-            throw new BookAlreadyBorrowedException(
-                "Borrower with ID " + request.borrowerId() + " has already borrowed the book with ID " + request.bookId() + " and has not returned it yet."
-            );
-        }
+        BookCopy availableCopy = bookCopyRepository
+            .findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(existingBook.getId())
+            .orElseThrow(() -> new BookNotAvailableException(
+                "Book with ID " + request.bookId() + " has no available copies."
+            ));
 
         // Create a new borrowing record
-        Borrowing newBorrowing = new Borrowing(existingBook, existingBorrower, LocalDate.now(clock));
+        Borrowing newBorrowing = new Borrowing(
+            existingBook,
+            availableCopy,
+            existingBorrower,
+            LocalDate.now(clock)
+        );
 
-        // Update book availability
-        existingBook.setIsAvailable(false);
+        availableCopy.setIsAvailable(false);
+        availableCopy.incrementTimesBorrowed();
 
-        // increment timesBorrowed
-        existingBook.incrementTimesBorrowed();
-
-        // Save the borrowing record and update the book
-        bookRepository.save(existingBook);
+        bookCopyRepository.save(availableCopy);
         return borrowingRepository.save(newBorrowing);
     }
 
@@ -151,8 +165,7 @@ public class BorrowServiceImpl implements BorrowService{
                 "Borrower with ID " + request.borrowerId() + " not found."
             ));
 
-        // Find active borrowing
-        Optional<Borrowing> openBorrowing = borrowingRepository.findByBookIdAndBorrowerIdAndStatusIn(
+        Optional<Borrowing> openBorrowing = borrowingRepository.findByBookCopyBookIdAndBorrowerIdAndStatusIn(
             existingBook.getId(),
             existingBorrower.getId(),
             OPEN_STATUSES
@@ -171,18 +184,17 @@ public class BorrowServiceImpl implements BorrowService{
         //set late fee
         borrowing.setLateFee(lateFee);
 
+        // Record the condition of the returned copy
+        borrowing.getBookCopy().setCondition(request.condition());
+
         // Mark status as returned 
         borrowing.setStatus(BorrowingStatus.RETURNED);
         
         // Set return date
         borrowing.setReturnDate(LocalDate.now(clock));
         
-        // // Update book availability
-        // borrowing.getBook().setIsAvailable(true);
-
-        // always explicitly update the book entity
-        existingBook.setIsAvailable(true);
-        bookRepository.save(existingBook);
+        borrowing.getBookCopy().setIsAvailable(true);
+        bookCopyRepository.save(borrowing.getBookCopy());
 
         return borrowingRepository.save(borrowing);
     }
@@ -227,7 +239,7 @@ public class BorrowServiceImpl implements BorrowService{
             throw new BookNotFoundException("Book with ID " + bookId + " not found.");
         }
 
-        return borrowingRepository.findByBookIdAndStatusIn(
+        return borrowingRepository.findByBookCopyBookIdAndStatusIn(
             bookId,
             OPEN_STATUSES
         );
