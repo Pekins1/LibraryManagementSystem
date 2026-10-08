@@ -8,7 +8,7 @@ Use this guide to track the transition from a traditional library management sys
 
 **Reviewed:** 2026-10-04  
 **Current phase:** Phase 1 — Core Architecture & Domain Modernization (in progress)  
-**Next recommended work:** Finalize the active Spring Boot entry point, then update domain entities and schemas to support peer-to-peer lending and visibility controls.
+**Next recommended work:** Create a dedicated Spring Boot entry point for the web backend, leaving the legacy terminal application disabled; then update domain entities and schemas to support peer-to-peer lending and visibility controls.
 
 Status reflects files found in the repository on the reviewed date; it is not a claim that an item has been tested or deployed.
 
@@ -30,7 +30,7 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 
 | Area | Status | Repository evidence / implementation details |
 |---|---|---|
-| Core domain and service layers | `[~]` | Basic domain models, service interfaces and implementations, DTOs, repositories, and domain exceptions are present. User ownership, visibility controls, and donation workflows are not implemented. `LibraryApplication.java` is disabled. |
+| Core domain and service layers | `[~]` | Basic domain models, service interfaces and implementations, DTOs, repositories, and domain exceptions are present. User ownership, visibility controls, and donation workflows are not implemented. `LibraryApplication.java` is the disabled legacy terminal entry point; it should remain disabled. A separate Spring Boot entry point for the web backend is needed. |
 | API and transport layer | `[ ]` | Spring Web and validation dependencies are present, but active REST controllers or GraphQL schemas were not found. |
 | PostgreSQL persistence | `[~]` | JPA mappings, Spring Data repositories, and the PostgreSQL driver are present. Runtime datasource settings and migration tooling are not configured in the checked application properties. |
 | React frontend dashboard | `[ ]` | A frontend application workspace was not found. |
@@ -46,7 +46,8 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 - `[x]` Define base domain entities for books, copies, borrowers, and borrowings.
 - `[x]` Establish Spring Data JPA repositories and service layers.
 - `[x]` Implement request DTOs, validation constraints, and domain exceptions.
-- `[~]` **Restore the application entry point:** Reactivate or replace `LibraryApplication.java`, then verify Spring Boot component scanning and dependency injection.
+- `[ ]` **Create the web backend entry point:** Add a dedicated Spring Boot application class for the web backend. Keep the legacy terminal-based `LibraryApplication.java` disabled; do not reactivate it as the web server entry point.
+- `[ ]` Verify the web application starts and Spring Boot component scanning and dependency injection discover the controllers, services, and repositories.
 - `[ ]` **Expand the domain models for peer-to-peer operations:**
   - `[ ]` Add user ownership to book copies.
   - `[ ]` Add catalog visibility values such as `PRIVATE` and `PUBLIC_COMMUNITY`.
@@ -54,7 +55,7 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
   - `[ ]` Track physical item condition with agreed values such as `NEW`, `GOOD`, `FAIR`, and `POOR`.
 - `[ ]` Update service rules and tests for ownership, visibility, loans, and donations.
 
-**Exit criteria:** The Spring application boots successfully, updated entity models support peer-to-peer ownership and visibility, and core service tests pass.
+**Exit criteria:** The dedicated web backend application boots successfully without launching the legacy terminal interface, updated entity models support peer-to-peer ownership and visibility, and core service tests pass.
 
 ### Phase 2 — REST API & community transaction layer
 
@@ -125,7 +126,7 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 
 ## Recommended implementation order
 
-1. **Complete Phase 1 foundation:** Enable the Spring Boot entry point, verify local startup, and add user ownership, visibility, condition, and transaction concepts to the domain.
+1. **Complete Phase 1 foundation:** Create a dedicated Spring Boot entry point for the web backend (leave the legacy terminal entry point disabled), verify local startup, and add user ownership, visibility, condition, and transaction concepts to the domain.
 2. **Set up Phase 3 persistence:** Configure environment-based PostgreSQL settings, add migrations, and write repository integration tests.
 3. **Develop Phase 2 API:** Implement REST controllers, authentication and authorization, privacy enforcement, and lending/donation transaction handlers.
 4. **Build Phase 4 frontend:** Initialize React and implement personal collection, community discovery, and exchange workflows against the API contract.
