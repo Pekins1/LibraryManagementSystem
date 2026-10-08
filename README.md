@@ -33,7 +33,7 @@ src/main/java/
 
 ## Setup Instructions
 
-1. Ensure you have Java JDK 25 installed and selected as `JAVA_HOME`
+1. Ensure you have Java JDK 21 installed and selected as `JAVA_HOME`
 2. Clone the repository or download the source code
 3. Compile the project:
    ```
