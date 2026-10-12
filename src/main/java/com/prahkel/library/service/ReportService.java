@@ -3,7 +3,7 @@ package com.prahkel.library.service;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.prahkel.library.model.Book;
+
 import com.prahkel.library.model.BookCopy;
 import com.prahkel.library.model.Borrowing;
 

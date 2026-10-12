@@ -8,8 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.prahkel.library.dto.BorrowBookRequest;
 import com.prahkel.library.dto.ReturnBookRequest;
-import com.prahkel.library.exception.BookAlreadyBorrowedException;
-import com.prahkel.library.exception.BookNotAvailableException;
+
 import com.prahkel.library.exception.BookNotFoundException;
 import com.prahkel.library.exception.BorrowLimitExceededException;
 import com.prahkel.library.exception.BorrowerNotFoundException;
@@ -24,7 +23,7 @@ import com.prahkel.library.repository.BookCopyRepository;
 import com.prahkel.library.repository.BookRepository;
 import com.prahkel.library.repository.BorrowerRepository;
 import com.prahkel.library.repository.BorrowingRepository;
-import com.prahkel.library.service.impl.BorrowServiceImpl;
+
 
 import java.math.BigDecimal;
 import java.time.Clock;

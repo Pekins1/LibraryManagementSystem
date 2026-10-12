@@ -2,8 +2,7 @@ package com.prahkel.library.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+
 
 import com.prahkel.library.model.BookCondition;
 import com.prahkel.library.model.BookCopy;

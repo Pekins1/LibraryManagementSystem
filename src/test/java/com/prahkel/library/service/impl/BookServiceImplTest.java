@@ -28,7 +28,7 @@ import com.prahkel.library.model.BorrowingStatus;
 import com.prahkel.library.repository.BookCopyRepository;
 import com.prahkel.library.repository.BookRepository;
 import com.prahkel.library.repository.BorrowingRepository;
-import com.prahkel.library.service.impl.BookServiceImpl;
+
 
 import java.time.LocalDate;
 import java.time.Clock;
