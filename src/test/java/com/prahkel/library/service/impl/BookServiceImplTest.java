@@ -20,14 +20,19 @@ import com.prahkel.library.exception.BookNotAvailableException;
 import com.prahkel.library.exception.BookNotFoundException;
 import com.prahkel.library.exception.BookWithActiveLoanCannotBeArchivedException;
 import com.prahkel.library.exception.InvalidCopyStateException;
+import com.prahkel.library.exception.MemberNotFoundException;
 import com.prahkel.library.model.Book;
 import com.prahkel.library.model.BookCondition;
 import com.prahkel.library.model.BookCopy;
 import com.prahkel.library.model.BookLifecycleStatus;
 import com.prahkel.library.model.BorrowingStatus;
+import com.prahkel.library.model.CopyVisibility;
+import com.prahkel.library.model.LibraryMember;
+import com.prahkel.library.model.MemberType;
 import com.prahkel.library.repository.BookCopyRepository;
 import com.prahkel.library.repository.BookRepository;
 import com.prahkel.library.repository.BorrowingRepository;
+import com.prahkel.library.repository.LibraryMemberRepository;
 
 
 import java.time.LocalDate;
@@ -55,6 +60,9 @@ class BookServiceImplTest {
 
     @Mock 
     private BorrowingRepository borrowingRepository;
+
+    @Mock 
+    private LibraryMemberRepository libraryMemberRepository;
     
     private BookServiceImpl bookService;
     private Clock fixedClock;
@@ -72,6 +80,7 @@ class BookServiceImplTest {
             bookRepository, 
             bookCopyRepository,
             borrowingRepository, 
+            libraryMemberRepository,
             fixedClock
         );
     }
@@ -135,7 +144,10 @@ class BookServiceImplTest {
         AddBookCopyRequest request = new AddBookCopyRequest(
             "LMS-9780132350884-01",
             BookCondition.NEW,
-            LocalDate.of(2026,10,01)
+            LocalDate.of(2026,10,01),
+            2L,
+            CopyVisibility.PRIVATE
+            
         );
 
         Book savedBook = new Book(
@@ -167,7 +179,9 @@ class BookServiceImplTest {
         AddBookCopyRequest request = new AddBookCopyRequest(
             "LMS-9780132350884-01",
             BookCondition.NEW,
-            LocalDate.of(2026,10,01)
+            LocalDate.of(2026,10,01),
+            2L,
+            CopyVisibility.PRIVATE
         );
 
         Book savedBook = new Book(
@@ -196,12 +210,14 @@ class BookServiceImplTest {
 
     @Test 
     void addCopyToBook_shouldThrowWhenAcquiredDateIsAfutureDate(){
-          Long bookId = 1L;
+        Long bookId = 1L;
 
         AddBookCopyRequest request = new AddBookCopyRequest(
             "LMS-9780132350884-01",
             BookCondition.NEW,
-            LocalDate.of(2026,10,03)
+            LocalDate.of(2026,10,03),
+            2L,
+            CopyVisibility.PRIVATE
         );
 
         Book savedBook = new Book(
@@ -227,13 +243,16 @@ class BookServiceImplTest {
     }
 
     @Test 
-    void addCopyToBook_shouldSaveCopyWhenAdded(){
+    void addCopyToBook_shouldThrowWhenOwnerNotFound(){
         Long bookId = 1L;
+        
 
         AddBookCopyRequest request = new AddBookCopyRequest(
             "LMS-9780132350884-01",
-            BookCondition.LIKE_NEW,
-            LocalDate.of(2026,10,02)
+            BookCondition.NEW,
+            LocalDate.of(2026,10,01),
+            2L,
+            CopyVisibility.PRIVATE
         );
 
         Book savedBook = new Book(
@@ -246,14 +265,64 @@ class BookServiceImplTest {
         savedBook.setId(bookId);
         savedBook.setLifecycleStatus(BookLifecycleStatus.ACTIVE);
 
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(savedBook));
+        when(bookCopyRepository.existsByBarcode(request.barcode())).thenReturn(false);
+        when(libraryMemberRepository.findById(request.ownerId())).thenReturn(Optional.empty());
+
+        assertThrows(MemberNotFoundException.class,
+            () -> bookService.addCopyToBook(bookId, request)
+        );
+
+        verify(bookRepository).findById(bookId);
+        verify(bookCopyRepository).existsByBarcode(request.barcode());
+        verify(libraryMemberRepository).findById(request.ownerId());
+        verify(bookCopyRepository, never()).saveAndFlush(any(BookCopy.class));
+
+    }
+
+    @Test 
+    void addCopyToBook_shouldSaveCopyWhenAdded(){
+        Long bookId = 1L;
+        Long ownerId = 2L;
+
+        AddBookCopyRequest request = new AddBookCopyRequest(
+            "LMS-9780132350884-01",
+            BookCondition.LIKE_NEW,
+            LocalDate.of(2026,10,02),
+            2L,
+            CopyVisibility.PRIVATE
+        );
+
+        Book savedBook = new Book(
+            "Clean Code",
+            "Robert C. Martin",
+            "Software",
+            "978-0132350884",
+            2008 
+        );
+        savedBook.setId(bookId);
+        savedBook.setLifecycleStatus(BookLifecycleStatus.ACTIVE);
+        
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com",
+            MemberType.INDIVIDUAL
+        );
+
+        owner.setId(ownerId);
+
         BookCopy savedCopy = new BookCopy(
             request.barcode(),
             request.condition(),
-            request.acquiredDate()
+            request.acquiredDate(),
+            owner,
+            CopyVisibility.PRIVATE
+
         );
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(savedBook));
         when(bookCopyRepository.existsByBarcode(request.barcode())).thenReturn(false);
+        when(libraryMemberRepository.findById(request.ownerId())).thenReturn(Optional.of(owner));
         when(bookCopyRepository.saveAndFlush(any(BookCopy.class))).thenReturn(savedCopy);
 
         BookCopy result = bookService.addCopyToBook(bookId, request);
@@ -262,12 +331,14 @@ class BookServiceImplTest {
         assertEquals(request.barcode(), result.getBarcode());
         assertEquals(request.condition(), result.getCondition());
         assertEquals(request.acquiredDate(), result.getAcquiredDate());
+        assertEquals(owner.getName(),result.getOwner().getName());
         assertTrue(savedCopy.isAvailable());
         assertEquals(0, savedCopy.getTimesBorrowed());
 
 
         verify(bookRepository).findById(bookId);
         verify(bookCopyRepository).existsByBarcode(request.barcode());
+        verify(libraryMemberRepository).findById(request.ownerId());
         verify(bookCopyRepository).saveAndFlush(any(BookCopy.class));
 
     }
@@ -354,11 +425,20 @@ class BookServiceImplTest {
     void deleteCopy_shouldThrowWhenCopyIsBorrowed(){
         Long copyId = 5L;
 
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
+
         BookCopy bookCopy = new BookCopy(
             "LMS-9780132350884-01", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,03)
+            LocalDate.of(2026,10,03),
+            owner,
+            CopyVisibility.PRIVATE
         );
+
         bookCopy.setIsAvailable(false);
         bookCopy.setTimesBorrowed(2);
 
@@ -377,11 +457,19 @@ class BookServiceImplTest {
     @Test 
     void deleteCopy_shouldThrowWhenCopyHasBorrowingHistory(){
         Long copyId = 5L;
+        
+         LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
 
         BookCopy bookCopy = new BookCopy(
             "LMS-9780132350884-01", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,03)
+            LocalDate.of(2026,10,03),
+            owner,
+            CopyVisibility.PRIVATE
         );
         bookCopy.setIsAvailable(true);
         bookCopy.setTimesBorrowed(2);
@@ -404,10 +492,18 @@ class BookServiceImplTest {
     void deleteCopy_shouldDeleteSuccessfully(){
         Long copyId = 5L;
 
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
+
         BookCopy bookCopy = new BookCopy(
             "LMS-9780132350884-01", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,03)
+            LocalDate.of(2026,10,03),
+            owner,
+            CopyVisibility.PRIVATE
         );
         bookCopy.setIsAvailable(true);
         bookCopy.setTimesBorrowed(0);
@@ -641,6 +737,12 @@ class BookServiceImplTest {
     void getCopiesForBook_shouldReturnBookCopiesWhenFound(){
         Long bookId = 1L;
 
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
+
         Book book = new Book(
             "Clean Code",
             "Robert C. Martin",
@@ -655,7 +757,9 @@ class BookServiceImplTest {
         BookCopy firstCopy = new BookCopy(
             "LMS-9780132350884-01", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,02)
+            LocalDate.of(2026,10,02),
+            owner,
+            CopyVisibility.PUBLIC
         );
         firstCopy.setIsAvailable(false);
         firstCopy.setTimesBorrowed(2);
@@ -667,7 +771,9 @@ class BookServiceImplTest {
         BookCopy secondCopy = new BookCopy(
             "LMS-9780132350884-02", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,03)
+            LocalDate.of(2026,10,03),
+            owner,
+            CopyVisibility.PRIVATE
         );
         secondCopy.setIsAvailable(true);
         secondCopy.setTimesBorrowed(0);
@@ -709,6 +815,12 @@ class BookServiceImplTest {
     void getAvailableCopiesForBook_shouldReturnAvailableBookCopiesWhenFound(){
         Long bookId = 1L;
 
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
+
         Book book = new Book(
             "Clean Code",
             "Robert C. Martin",
@@ -723,7 +835,9 @@ class BookServiceImplTest {
         BookCopy firstCopy = new BookCopy(
             "LMS-9780132350884-01", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,02)
+            LocalDate.of(2026,10,02),
+            owner,
+            CopyVisibility.PUBLIC
         );
         firstCopy.setIsAvailable(false);
         firstCopy.setTimesBorrowed(2);
@@ -735,7 +849,9 @@ class BookServiceImplTest {
         BookCopy secondCopy = new BookCopy(
             "LMS-9780132350884-02", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,03)
+            LocalDate.of(2026,10,03),
+            owner,
+            CopyVisibility.PUBLIC
         );
         secondCopy.setIsAvailable(true);
         secondCopy.setTimesBorrowed(0);
@@ -765,6 +881,12 @@ class BookServiceImplTest {
     void getAvailableCopiesForBook_shouldReturnAnEmptyListWhenBookIsArchived(){
         Long bookId = 1L;
 
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
+
         Book book = new Book(
             "Clean Code",
             "Robert C. Martin",
@@ -780,7 +902,9 @@ class BookServiceImplTest {
         BookCopy firstCopy = new BookCopy(
             "LMS-9780132350884-01", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,02)
+            LocalDate.of(2026,10,02),
+            owner,
+            CopyVisibility.PRIVATE
         );
         firstCopy.setIsAvailable(false);
         firstCopy.setTimesBorrowed(2);
@@ -792,7 +916,9 @@ class BookServiceImplTest {
         BookCopy secondCopy = new BookCopy(
             "LMS-9780132350884-02", 
             BookCondition.FAIR,
-            LocalDate.of(2026,10,03)
+            LocalDate.of(2026,10,03),
+            owner,
+            CopyVisibility.PUBLIC
         );
         secondCopy.setIsAvailable(true);
         secondCopy.setTimesBorrowed(0);

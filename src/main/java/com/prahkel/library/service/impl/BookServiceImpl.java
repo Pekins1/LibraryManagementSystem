@@ -19,13 +19,16 @@ import com.prahkel.library.exception.BookNotAvailableException;
 import com.prahkel.library.exception.BookNotFoundException;
 import com.prahkel.library.exception.BookWithActiveLoanCannotBeArchivedException;
 import com.prahkel.library.exception.InvalidCopyStateException;
+import com.prahkel.library.exception.MemberNotFoundException;
 import com.prahkel.library.model.Book;
 import com.prahkel.library.model.BookCopy;
 import com.prahkel.library.model.BookLifecycleStatus;
 import com.prahkel.library.model.BorrowingStatus;
+import com.prahkel.library.model.LibraryMember;
 import com.prahkel.library.repository.BookCopyRepository;
 import com.prahkel.library.repository.BookRepository;
 import com.prahkel.library.repository.BorrowingRepository;
+import com.prahkel.library.repository.LibraryMemberRepository;
 import com.prahkel.library.service.BookService;
 
 import jakarta.validation.Valid;
@@ -47,6 +50,7 @@ public class BookServiceImpl implements BookService{
     private final BookRepository bookRepository;
     private final BookCopyRepository bookCopyRepository;
     private final BorrowingRepository borrowingRepository;
+    private final LibraryMemberRepository libraryMemberRepository;
     private final Clock clock;
 
 
@@ -54,11 +58,13 @@ public class BookServiceImpl implements BookService{
             BookRepository bookRepository,
             BookCopyRepository bookCopyRepository, 
             BorrowingRepository borrowingRepository,
+            LibraryMemberRepository libraryMemberRepository,
             Clock clock) {
 
         this.bookRepository = bookRepository;
         this.bookCopyRepository = bookCopyRepository;
         this.borrowingRepository = borrowingRepository;
+        this.libraryMemberRepository = libraryMemberRepository;
         this.clock = clock;
     }
 
@@ -147,14 +153,25 @@ public class BookServiceImpl implements BookService{
             ? request.acquiredDate()
             : today;
 
+
         // Aquired date cannot be in the future
         if (acquired.isAfter(today)){
             throw new InvalidCopyStateException("Acquired date cannot be in the future.");
         }
 
-        BookCopy copy = new BookCopy(request.barcode(), 
+        // Fetching Copy owner
+        LibraryMember owner  = libraryMemberRepository.findById(request.ownerId())
+            .orElseThrow(() -> new MemberNotFoundException(
+                    "Member not found with ID: " + request.ownerId())
+        );
+
+        BookCopy copy = new BookCopy(
+            request.barcode(), 
             request.condition(), 
-            acquired
+            acquired,
+            owner,
+            request.visibility()
+
         );
 
         book.addCopy(copy); // Keeps both sides of the relationship consistent via cascade mapping

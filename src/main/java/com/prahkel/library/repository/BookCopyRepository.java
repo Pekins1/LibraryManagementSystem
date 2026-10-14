@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Lock;
 
 import com.prahkel.library.model.BookCondition;
 import com.prahkel.library.model.BookCopy;
+import com.prahkel.library.model.CopyVisibility;
 
 import jakarta.persistence.LockModeType;
 
@@ -23,7 +24,8 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<BookCopy> findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(
-        Long bookId
+        Long bookId,
+        CopyVisibility visibility
     );
 
     List<BookCopy> findByBookIdAndConditionIn(

@@ -35,6 +35,14 @@ public class BookCopy {
     @JoinColumn(name = "book_id", nullable = false)
     private Book book;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id",nullable = false)
+    private LibraryMember owner;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CopyVisibility visibility = CopyVisibility.PRIVATE;
+
     protected BookCopy(){
         // Requied by jpa
     }
@@ -42,13 +50,17 @@ public class BookCopy {
     public BookCopy (
             String barcode,
             BookCondition condition, 
-            LocalDate acquiredDate) {
+            LocalDate acquiredDate,
+            LibraryMember owner,
+            CopyVisibility visibility) {
 
         this.barcode = barcode;
         this.isAvailable = true;
         this.timesBorrowed = 0;
         this.condition = condition;
         this.acquiredDate = acquiredDate;
+        this.owner = owner;
+        this.visibility = visibility;
     }
 
     public void incrementTimesBorrowed() {
@@ -88,6 +100,14 @@ public class BookCopy {
         return acquiredDate;
     }
 
+    public LibraryMember getOwner(){
+        return owner;
+    }
+
+    public CopyVisibility getVisibility(){
+        return visibility;
+    }
+
     // Setters
 
     public void setId( Long id){
@@ -112,5 +132,13 @@ public class BookCopy {
 
     public void setTimesBorrowed(int timesBorrowed){
         this.timesBorrowed = timesBorrowed;
+    }
+
+    public void setOwner(LibraryMember owner){
+        this.owner = owner;
+    }
+    
+    public void setVisibility(CopyVisibility visibility){
+        this.visibility = visibility;
     }
 }

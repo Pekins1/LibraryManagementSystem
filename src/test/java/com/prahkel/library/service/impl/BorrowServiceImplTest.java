@@ -8,7 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.prahkel.library.dto.BorrowBookRequest;
 import com.prahkel.library.dto.ReturnBookRequest;
-
+import com.prahkel.library.exception.BookNotAvailableException;
 import com.prahkel.library.exception.BookNotFoundException;
 import com.prahkel.library.exception.BorrowLimitExceededException;
 import com.prahkel.library.exception.BorrowerNotFoundException;
@@ -19,11 +19,14 @@ import com.prahkel.library.model.BookLifecycleStatus;
 import com.prahkel.library.model.Borrower;
 import com.prahkel.library.model.Borrowing;
 import com.prahkel.library.model.BorrowingStatus;
+import com.prahkel.library.model.CopyVisibility;
+import com.prahkel.library.model.LibraryMember;
+import com.prahkel.library.model.MemberType;
 import com.prahkel.library.repository.BookCopyRepository;
 import com.prahkel.library.repository.BookRepository;
 import com.prahkel.library.repository.BorrowerRepository;
 import com.prahkel.library.repository.BorrowingRepository;
-
+import com.prahkel.library.repository.LibraryMemberRepository;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -34,6 +37,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -51,6 +55,9 @@ public class BorrowServiceImplTest {
 
     @Mock
     private BorrowingRepository borrowingRepository;
+
+    @Mock 
+    private LibraryMemberRepository libraryMemberRepository;
 
     private BorrowServiceImpl borrowService;
 
@@ -75,6 +82,7 @@ public class BorrowServiceImplTest {
             bookCopyRepository,
             borrowerRepository,
             borrowingRepository,
+            libraryMemberRepository,
             fixedClock
         );
     }
@@ -83,6 +91,12 @@ public class BorrowServiceImplTest {
     void borrowBook_shouldSaveBorrowingWhenBookIsAvailableAndBorrowerIsEligible() {
         Long bookId = 7L;
         Long borrowerId = 20L;
+
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
 
         Book book = new Book(
             "Clean Code",
@@ -97,7 +111,14 @@ public class BorrowServiceImplTest {
         Borrower borrower = new Borrower("Eric Ford", "testemail@gmail.com");
         borrower.setId(borrowerId);
 
-        BookCopy copy = new BookCopy("BC-100", BookCondition.NEW, LocalDate.of(2026, 9, 1));
+        BookCopy copy = new BookCopy(
+            "BC-100",
+            BookCondition.NEW,
+            LocalDate.of(2026, 9, 1),
+            owner,
+            CopyVisibility.PUBLIC
+        );
+
         copy.setBook(book);
         copy.setIsAvailable(true);
 
@@ -109,7 +130,7 @@ public class BorrowServiceImplTest {
         when(borrowingRepository.countByBorrowerIdAndStatusIn(
             eq(borrowerId), eq(OPEN_STATUSES)
         )).thenReturn(2L);
-        when(bookCopyRepository.findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(bookId))
+        when(bookCopyRepository.findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(bookId,CopyVisibility.PUBLIC))
             .thenReturn(Optional.of(copy));
         when(bookCopyRepository.save(copy)).thenReturn(copy);
         when(borrowingRepository.save(any(Borrowing.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -170,10 +191,51 @@ public class BorrowServiceImplTest {
             eq(7L), eq(20L), eq(OPEN_STATUSES)
         )).thenReturn(false);
         when(borrowingRepository.countByBorrowerIdAndStatusIn(20L, OPEN_STATUSES)).thenReturn(6L);
-
+       
         assertThrows(BorrowLimitExceededException.class,
             () -> borrowService.borrowBook(new BorrowBookRequest(7L, 20L))
         );
+
+    }
+
+    @Test 
+    void borrowBook_shouldThrowWhenBookHasNoAvailableCopies(){
+        Book book = new Book(
+            "Clean Code", 
+            "Robert C. Martin",
+            "Software", 
+            "978-0132350884",
+            2008
+        );
+
+        book.setId(7L);
+
+        Borrower borrower = new Borrower(
+            "Eric Ford", 
+            "testemail@gmail.com"
+        );
+
+        borrower.setId(20L);
+
+        when(bookRepository.findById(7L)).thenReturn(Optional.of(book));
+        when(borrowerRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(borrower));
+        when(borrowingRepository.existsByBookCopyBookIdAndBorrowerIdAndStatusIn(
+            eq(7L), eq(20L), eq(OPEN_STATUSES)
+        )).thenReturn(false);
+        when(borrowingRepository.countByBorrowerIdAndStatusIn(20L, OPEN_STATUSES)).thenReturn(2L);
+        when(bookCopyRepository.findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(7L, CopyVisibility.PUBLIC)).thenReturn(Optional.empty());
+
+        assertThrows(BookNotAvailableException.class,
+            () -> borrowService.borrowBook(new BorrowBookRequest(7L, 20L))
+        );
+
+        verify(bookRepository).findById(7L);
+        verify(borrowerRepository).findByIdForUpdate(20L);
+        verify(borrowingRepository).existsByBookCopyBookIdAndBorrowerIdAndStatusIn(
+            eq(7L), eq(20L), eq(OPEN_STATUSES)
+        );
+        verify(borrowingRepository).countByBorrowerIdAndStatusIn(20L, OPEN_STATUSES);
+        verify(bookCopyRepository).findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(7L, CopyVisibility.PUBLIC);
     }
 
     @Test
@@ -184,7 +246,13 @@ public class BorrowServiceImplTest {
         Borrower borrower = new Borrower("Eric Ford", "testemail@gmail.com");
         borrower.setId(20L);
 
-        BookCopy copy = new BookCopy("BC-200", BookCondition.GOOD, LocalDate.of(2026, 9, 1));
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
+
+        BookCopy copy = new BookCopy("BC-200", BookCondition.GOOD, LocalDate.of(2026, 9, 1), owner, CopyVisibility.PUBLIC);
         copy.setBook(book);
         copy.setIsAvailable(false);
 
@@ -239,7 +307,13 @@ public class BorrowServiceImplTest {
         Borrower borrower = new Borrower("Eric Ford", "testemail@gmail.com");
         borrower.setId(20L);
 
-        BookCopy copy = new BookCopy("BC-300", BookCondition.NEW, LocalDate.of(2026, 9, 1));
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins", 
+            "rahkel@example.com", 
+            MemberType.INDIVIDUAL
+        );
+
+        BookCopy copy = new BookCopy("BC-300", BookCondition.NEW, LocalDate.of(2026, 9, 1), owner, CopyVisibility.PUBLIC);
         copy.setBook(book);
         copy.setIsAvailable(false);
 
