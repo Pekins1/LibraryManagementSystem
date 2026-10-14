@@ -1,8 +1,10 @@
 # Library Management System
 
+See the [modernization roadmap](./ROADMAP.md) for the current phase, implementation checklist, and recommended next steps.
+
 ## Overview
 
-The Library Management System is a Java console application for managing a library's book collection, borrowing operations, and record-keeping. This project demonstrates core Java programming concepts including object-oriented design, collections framework, exception handling, file I/O, and serialization.
+This repository is modernizing a traditional library management system into a peer-to-peer book sharing platform. The backend currently contains domain, service, DTO, and persistence foundations; the target capabilities and implementation checklist are tracked in the [modernization roadmap](./ROADMAP.md).
 
 ## Features
 
@@ -31,7 +33,7 @@ src/main/java/
 
 ## Setup Instructions
 
-1. Ensure you have Java JDK 25 installed and selected as `JAVA_HOME`
+1. Ensure you have Java JDK 21 installed and selected as `JAVA_HOME`
 2. Clone the repository or download the source code
 3. Compile the project:
    ```
