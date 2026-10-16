@@ -23,7 +23,7 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
 
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<BookCopy> findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(
+    Optional<BookCopy> findFirstByBookIdAndIsAvailableTrueAndVisibilityOrderByIdAsc(
         Long bookId,
         CopyVisibility visibility
     );
