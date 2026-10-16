@@ -82,7 +82,6 @@ public class BorrowServiceImplTest {
             bookCopyRepository,
             borrowerRepository,
             borrowingRepository,
-            libraryMemberRepository,
             fixedClock
         );
     }
@@ -130,7 +129,7 @@ public class BorrowServiceImplTest {
         when(borrowingRepository.countByBorrowerIdAndStatusIn(
             eq(borrowerId), eq(OPEN_STATUSES)
         )).thenReturn(2L);
-        when(bookCopyRepository.findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(bookId,CopyVisibility.PUBLIC))
+        when(bookCopyRepository.findFirstByBookIdAndIsAvailableTrueAndVisibilityOrderByIdAsc(bookId,CopyVisibility.PUBLIC))
             .thenReturn(Optional.of(copy));
         when(bookCopyRepository.save(copy)).thenReturn(copy);
         when(borrowingRepository.save(any(Borrowing.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -223,7 +222,7 @@ public class BorrowServiceImplTest {
             eq(7L), eq(20L), eq(OPEN_STATUSES)
         )).thenReturn(false);
         when(borrowingRepository.countByBorrowerIdAndStatusIn(20L, OPEN_STATUSES)).thenReturn(2L);
-        when(bookCopyRepository.findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(7L, CopyVisibility.PUBLIC)).thenReturn(Optional.empty());
+        when(bookCopyRepository.findFirstByBookIdAndIsAvailableTrueAndVisibilityOrderByIdAsc(7L, CopyVisibility.PUBLIC)).thenReturn(Optional.empty());
 
         assertThrows(BookNotAvailableException.class,
             () -> borrowService.borrowBook(new BorrowBookRequest(7L, 20L))
@@ -235,7 +234,7 @@ public class BorrowServiceImplTest {
             eq(7L), eq(20L), eq(OPEN_STATUSES)
         );
         verify(borrowingRepository).countByBorrowerIdAndStatusIn(20L, OPEN_STATUSES);
-        verify(bookCopyRepository).findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(7L, CopyVisibility.PUBLIC);
+        verify(bookCopyRepository).findFirstByBookIdAndIsAvailableTrueAndVisibilityOrderByIdAsc(7L, CopyVisibility.PUBLIC);
     }
 
     @Test

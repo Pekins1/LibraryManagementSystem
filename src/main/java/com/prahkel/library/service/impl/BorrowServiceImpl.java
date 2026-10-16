@@ -23,7 +23,6 @@ import com.prahkel.library.repository.BookCopyRepository;
 import com.prahkel.library.repository.BookRepository;
 import com.prahkel.library.repository.BorrowerRepository;
 import com.prahkel.library.repository.BorrowingRepository;
-import com.prahkel.library.repository.LibraryMemberRepository;
 import com.prahkel.library.service.BorrowService;
 
 import jakarta.validation.Valid;
@@ -46,7 +45,6 @@ public class BorrowServiceImpl implements BorrowService{
     private final BookCopyRepository bookCopyRepository;
     private final BorrowerRepository borrowerRepository;
     private final BorrowingRepository borrowingRepository;
-    private final LibraryMemberRepository libraryMemberRepository;
     static final int MAX_BORROW_LIMIT = 6; // Maximum number of books a borrower can borrow at once
     private final Clock clock;
     private static final BigDecimal DAILY_LATE_FEE = new BigDecimal("1.50");
@@ -59,13 +57,11 @@ public class BorrowServiceImpl implements BorrowService{
             BookCopyRepository bookCopyRepository, 
             BorrowerRepository borrowerRepository,
             BorrowingRepository borrowingRepository, 
-            LibraryMemberRepository libraryMemberRepository,
             Clock clock) {
             this.bookRepository = bookRepository;
             this.bookCopyRepository = bookCopyRepository;
             this.borrowerRepository = borrowerRepository;
             this.borrowingRepository = borrowingRepository;
-            this.libraryMemberRepository = libraryMemberRepository;
             this.clock = clock;
             
     }
@@ -134,7 +130,7 @@ public class BorrowServiceImpl implements BorrowService{
         } 
 
         BookCopy availableCopy = bookCopyRepository
-            .findFirstByBookIdAndIsAvailableTrueOrderByIdAsc(
+            .findFirstByBookIdAndIsAvailableTrueAndVisibilityOrderByIdAsc(
                 existingBook.getId(), 
                 CopyVisibility.PUBLIC)
             .orElseThrow(() -> new BookNotAvailableException(
