@@ -53,22 +53,25 @@ public class LibraryMemberServiceImpl implements LibraryMemberService {
             }
             throw exception;
         }   
-    };
+    }
 
+    @Override 
     @Transactional(readOnly = true)
     public LibraryMember getMemberById(@NotNull @Positive Long id){
         return libraryMemberRepository.findById(id)
             .orElseThrow(() -> new MemberNotFoundException("Member with ID: " + id + " not found.")
         );
     
-    };
+    }
 
+    @Override 
+    @Transactional(readOnly = true)
     public LibraryMember getMemberByEmail(@NotBlank String email){
         return libraryMemberRepository.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new MemberNotFoundException("Member with Email: " + email + " not found.")
         );
 
-    };
+    }
     
     private LibraryMember toMember(CreateMemberRequest request){
         return new LibraryMember(

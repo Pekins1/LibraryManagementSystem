@@ -38,21 +38,15 @@ public class LibraryMemberServiceImplTest {
             MemberType.INDIVIDUAL
         );
 
-        LibraryMember member = new LibraryMember(
-            "Rahkel Pekins",
-            "rahkel@Example.com",
-            MemberType.INDIVIDUAL
-        );
-
         when(libraryMemberRepository.existsByEmailIgnoreCase(request.email())).thenReturn(false);
-        when(libraryMemberRepository.saveAndFlush(any(LibraryMember.class))).thenReturn(member);
+        when(libraryMemberRepository.saveAndFlush(any(LibraryMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         LibraryMember result = libraryMemberService.createMember(request);
 
         assertNotNull(result);
-        assertEquals(member.getName(),result.getName());
-        assertEquals(member.getEmail(), result.getEmail());
-        assertEquals(member.getType(), result.getType());
+        assertEquals(request.name(),result.getName());
+        assertEquals(request.email(), result.getEmail());
+        assertEquals(request.type(), result.getType());
 
         verify(libraryMemberRepository).existsByEmailIgnoreCase(request.email());
         verify(libraryMemberRepository).saveAndFlush(any(LibraryMember.class));
