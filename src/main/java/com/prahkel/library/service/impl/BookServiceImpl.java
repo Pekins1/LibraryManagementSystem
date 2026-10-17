@@ -229,25 +229,8 @@ public class BookServiceImpl implements BookService{
         bookCopyRepository.delete(copy);
     }
 
-    private boolean isBarcodeConstraintViolation(Throwable exception) {
-        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
-            if (cause instanceof ConstraintViolationException violation) {
-                return "book_copy_barcode".equalsIgnoreCase(violation.getConstraintName());
-            }
-        }
-        return false;
-    }
-
-    private boolean isIsbnConstraintViolation(Throwable exception) {
-        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
-            if (cause instanceof ConstraintViolationException violation) {
-                return "book_isbn".equalsIgnoreCase(violation.getConstraintName());
-            }
-        }
-        return false;
-    }
     // Copy method ends here
-
+    
     // Getters for readOnly operations
 
     // Method to retrieve books by Id
@@ -396,5 +379,22 @@ public class BookServiceImpl implements BookService{
             request.isbn(),
             request.publishedYear()
         );
+    }
+    private boolean isBarcodeConstraintViolation(Throwable exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation) {
+                return "book_copy_barcode".equalsIgnoreCase(violation.getConstraintName());
+            }
+        }
+        return false;
+    }
+    
+    private boolean isIsbnConstraintViolation(Throwable exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException violation) {
+                return "book_isbn".equalsIgnoreCase(violation.getConstraintName());
+            }
+        }
+        return false;
     }
 }

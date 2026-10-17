@@ -8,7 +8,10 @@ import java.util.Optional;
 
 public interface LibraryMemberRepository extends JpaRepository<LibraryMember, Long> {
     Optional<LibraryMember> findByEmail(String email);
+    
+    Optional<LibraryMember> findByEmailIgnoreCase(String email);
 
     boolean existsByEmail(String email);
+    
     boolean existsByEmailIgnoreCase(String email);
 }
