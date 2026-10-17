@@ -27,7 +27,7 @@ import com.prahkel.library.service.BorrowService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+
 
 
 import java.time.LocalDate;
@@ -154,7 +154,7 @@ public class BorrowServiceImpl implements BorrowService{
 
 
     @Transactional
-    public Borrowing returnBook( @Valid @NotNull @Positive ReturnBookRequest request){
+    public Borrowing returnBook( @Valid @NotNull ReturnBookRequest request){
         // Check if book and borrower exist
         Book existingBook = bookRepository.findById(request.bookId())
             .orElseThrow(() -> new BookNotFoundException(

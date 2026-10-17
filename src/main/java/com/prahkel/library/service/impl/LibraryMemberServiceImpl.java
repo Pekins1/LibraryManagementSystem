@@ -33,7 +33,7 @@ public class LibraryMemberServiceImpl implements LibraryMemberService {
 
     @Override 
     @Transactional 
-    public LibraryMember createMember(@Valid @NotBlank @NotNull CreateMemberRequest request){
+    public LibraryMember createMember(@Valid @NotNull CreateMemberRequest request){
 
         if(libraryMemberRepository.existsByEmailIgnoreCase(request.email())){
             throw new MemberAlreadyExistsException(
@@ -63,7 +63,7 @@ public class LibraryMemberServiceImpl implements LibraryMemberService {
     
     };
 
-    public LibraryMember getMemberByEmail(@NotNull String email){
+    public LibraryMember getMemberByEmail(@NotBlank String email){
         return libraryMemberRepository.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new MemberNotFoundException("Member with Email: " + email + " not found.")
         );
