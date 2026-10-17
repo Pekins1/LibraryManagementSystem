@@ -1,10 +1,21 @@
 package com.prahkel.library.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
 import jakarta.persistence.*;
 
 
 @Entity
-@Table(name = "library_members")
+@Table(name = "library_members",
+    uniqueConstraints =  @UniqueConstraint(
+        name = "library_member_email",
+        columnNames = "email")
+)
 public class LibraryMember {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,7 +24,8 @@ public class LibraryMember {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true)
+   
+    @Column(nullable = false)
     private String email;
     
     @Enumerated(EnumType.STRING)
