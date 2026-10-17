@@ -115,7 +115,7 @@ public class LibraryMemberServiceImplTest {
     }
 
     @Test 
-    void getMemberById_shouldSucceedWhenMemberWithEmailExists(){
+    void getMemberByEmail_shouldSucceedWhenMemberWithEmailExists(){
 
         String email = "rahkel@Example.com";
         
@@ -141,7 +141,7 @@ public class LibraryMemberServiceImplTest {
     }
     
      @Test 
-    void getMemberById_shouldThrowWhenMemberWithEmailDoesNotExists(){
+    void getMemberByEmail_shouldThrowWhenMemberWithEmailDoesNotExists(){
         String email = "rahkel@Example.com";
 
         when(libraryMemberRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
