@@ -95,22 +95,14 @@ class BookServiceImplTest {
             2008  
         );
 
-        Book savedBook = new Book(
-            "Clean Code",
-            "Robert C. Martin",
-            "Software",
-            "978-0132350884",
-            2008 
-        );
-
         when(bookRepository.existsByIsbn(request.isbn())).thenReturn(false);
-        when(bookRepository.saveAndFlush(any(Book.class))).thenReturn(savedBook);
+        when(bookRepository.saveAndFlush(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Book result = bookService.createBook(request);
 
         assertNotNull(result);
-        assertEquals("Clean Code",result.getTitle());
-        assertEquals("978-0132350884",result.getIsbn());
+        assertEquals(request.title(),result.getTitle());
+        assertEquals(request.isbn(),result.getIsbn());
 
         verify(bookRepository).existsByIsbn(request.isbn());
         verify(bookRepository).saveAndFlush(any(Book.class));
@@ -311,19 +303,10 @@ class BookServiceImplTest {
 
         owner.setId(ownerId);
 
-        BookCopy savedCopy = new BookCopy(
-            request.barcode(),
-            request.condition(),
-            request.acquiredDate(),
-            owner,
-            CopyVisibility.PRIVATE
-
-        );
-
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(savedBook));
         when(bookCopyRepository.existsByBarcode(request.barcode())).thenReturn(false);
         when(libraryMemberRepository.findById(request.ownerId())).thenReturn(Optional.of(owner));
-        when(bookCopyRepository.saveAndFlush(any(BookCopy.class))).thenReturn(savedCopy);
+        when(bookCopyRepository.saveAndFlush(any(BookCopy.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookCopy result = bookService.addCopyToBook(bookId, request);
         
@@ -332,8 +315,8 @@ class BookServiceImplTest {
         assertEquals(request.condition(), result.getCondition());
         assertEquals(request.acquiredDate(), result.getAcquiredDate());
         assertEquals(owner.getName(),result.getOwner().getName());
-        assertTrue(savedCopy.isAvailable());
-        assertEquals(0, savedCopy.getTimesBorrowed());
+        assertTrue(result.isAvailable());
+        assertEquals(0, result.getTimesBorrowed());
 
 
         verify(bookRepository).findById(bookId);
@@ -1105,40 +1088,22 @@ class BookServiceImplTest {
         );
 
         List<CreateBookRequest> requests = List.of(first, second);
-
-        Book firstSaved = new Book(
-            "Clean Code",
-            "Robert C. Martin",
-            "Software",
-            "978-0132350884",
-            2008  
-        );
-
-        Book secondSaved = new Book(
-        "Refactoring",
-        "Martin Fowler",
-        "Software",
-        "978-0201485677",
-        1999
-        );
-        
-        List<Book> savedBooks = List.of(firstSaved, secondSaved);
         
 
         when(bookRepository.existsByIsbn(requests.get(0).isbn())).thenReturn(false);
         when(bookRepository.existsByIsbn(requests.get(1).isbn())).thenReturn(false);
-        when(bookRepository.saveAllAndFlush(any())).thenReturn(savedBooks);
+        when(bookRepository.saveAllAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         List<Book> result = bookService.createBooks(requests);
 
         assertNotNull(result);
         assertEquals(2, result.size());
 
-        assertEquals("Clean Code", result.get(0).getTitle());
-        assertEquals("978-0132350884", result.get(0).getIsbn());
+        assertEquals(first.title(), result.get(0).getTitle());
+        assertEquals(first.isbn(), result.get(0).getIsbn());
 
-        assertEquals("Refactoring", result.get(1).getTitle());
-        assertEquals("978-0201485677", result.get(1).getIsbn());
+        assertEquals(second.title(), result.get(1).getTitle());
+        assertEquals(second.isbn(), result.get(1).getIsbn());
 
         verify(bookRepository).existsByIsbn(requests.get(0).isbn());
         verify(bookRepository).existsByIsbn(requests.get(1).isbn());
