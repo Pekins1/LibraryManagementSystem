@@ -820,7 +820,7 @@ class BookServiceImplTest {
             BookCondition.FAIR,
             LocalDate.of(2026,10,02),
             owner,
-            CopyVisibility.PUBLIC
+            CopyVisibility.PRIVATE
         );
         firstCopy.setIsAvailable(false);
         firstCopy.setTimesBorrowed(2);
@@ -847,7 +847,7 @@ class BookServiceImplTest {
         book.setLifecycleStatus(BookLifecycleStatus.ACTIVE);
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
-        when(bookCopyRepository.findByBookIdAndIsAvailableTrue(bookId)).thenReturn(List.of(secondCopy));
+        when(bookCopyRepository.findByBookIdAndIsAvailableTrueAndVisibility(bookId,CopyVisibility.PUBLIC)).thenReturn(List.of(secondCopy));
 
         List<BookCopy> result = bookService.getAvailableCopiesForBook(bookId);
 
