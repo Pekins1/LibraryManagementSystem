@@ -24,6 +24,7 @@ import com.prahkel.library.model.Book;
 import com.prahkel.library.model.BookCopy;
 import com.prahkel.library.model.BookLifecycleStatus;
 import com.prahkel.library.model.BorrowingStatus;
+import com.prahkel.library.model.CopyVisibility;
 import com.prahkel.library.model.LibraryMember;
 import com.prahkel.library.repository.BookCopyRepository;
 import com.prahkel.library.repository.BookRepository;
@@ -207,7 +208,7 @@ public class BookServiceImpl implements BookService{
             return List.of();
         }
         
-        return bookCopyRepository.findByBookIdAndIsAvailableTrue(bookId);
+        return bookCopyRepository.findByBookIdAndIsAvailableTrueAndVisibility(bookId, CopyVisibility.PUBLIC);
     }
 
     @Transactional

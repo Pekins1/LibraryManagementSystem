@@ -19,7 +19,10 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
 
     List<BookCopy> findByBookId(Long bookId);
     
-    List<BookCopy> findByBookIdAndIsAvailableTrue(Long bookId);
+    List<BookCopy> findByBookIdAndIsAvailableTrueAndVisibility(
+        Long bookId,
+        CopyVisibility visibility
+    );
 
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
