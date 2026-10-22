@@ -6,9 +6,9 @@ Use this guide to track the transition from a traditional library management sys
 
 ## Status snapshot
 
-**Reviewed:** 2026-10-04  
+**Reviewed:** 2026-10-22  
 **Current phase:** Phase 1 — Core Architecture & Domain Modernization (in progress)  
-**Next recommended work:** Create a dedicated Spring Boot entry point for the web backend, leaving the legacy terminal application disabled; then update domain entities and schemas to support peer-to-peer lending and visibility controls.
+**Next recommended work:** Finish Phase 1 by defining loan/donation transaction types and completing service rules/tests; then verify the PostgreSQL profile and migration against a real PostgreSQL database.
 
 Status reflects files found in the repository on the reviewed date; it is not a claim that an item has been tested or deployed.
 
@@ -30,12 +30,12 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 
 | Area | Status | Repository evidence / implementation details |
 |---|---|---|
-| Core domain and service layers | `[~]` | Basic domain models, service interfaces and implementations, DTOs, repositories, and domain exceptions are present. User ownership, visibility controls, and donation workflows are not implemented. `LibraryApplication.java` is the disabled legacy terminal entry point; it should remain disabled. A separate Spring Boot entry point for the web backend is needed. |
+| Core domain and service layers | `[~]` | Domain models, services, DTOs, repositories, and exceptions are present. A dedicated `P2PLibraryWebApplication` entry point exists and the Spring context test passes. Book copies now have library-member ownership, `PRIVATE`/`PUBLIC` visibility, and physical condition. Loan/donation transaction types and donation workflows are not implemented. The legacy terminal `LibraryApplication.java` remains disabled. |
 | API and transport layer | `[ ]` | Spring Web and validation dependencies are present, but active REST controllers or GraphQL schemas were not found. |
-| PostgreSQL persistence | `[~]` | JPA mappings, Spring Data repositories, and the PostgreSQL driver are present. Runtime datasource settings and migration tooling are not configured in the checked application properties. |
+| PostgreSQL persistence | `[~]` | JPA mappings, repositories, PostgreSQL driver, a PostgreSQL profile with environment-based connection values, Flyway dependencies, and an initial schema migration are present. The default profile is still `dev` with H2; PostgreSQL migration execution and mappings have not yet been verified against PostgreSQL. |
 | React frontend dashboard | `[ ]` | A frontend application workspace was not found. |
 | AI recommendation engine | `[ ]` | No recommendation algorithms or AI integration were found. |
-| Automated testing | `[~]` | Service unit-test files exist. API contracts, peer-to-peer lending rules, and PostgreSQL integration tests remain to be added. |
+| Automated testing | `[~]` | Maven tests pass: 47 tests across application-context, repository, and service suites. Public-copy discovery and core service behavior have tests. API, donation workflow, authorization, and PostgreSQL integration tests remain to be added. |
 
 ## Roadmap and checklists
 
@@ -47,15 +47,14 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 - `[x]` Establish Spring Data JPA repositories and service layers.
 - `[x]` Implement request DTOs, validation constraints, and domain exceptions.
 - `[x]` **Create the web backend entry point:** Add a dedicated Spring Boot application class for the web backend. Keep the legacy terminal-based `LibraryApplication.java` disabled; do not reactivate it as the web server entry point.
-- `[x]` Verify the web application starts and Spring Boot component scanning and dependency injection discover the controllers, services, and repositories.
-- `[ ]` **Expand the domain models for peer-to-peer operations:**
-  - `[x]` Add user ownership to book copies.
-  - `[x]` Add catalog visibility values such as `PRIVATE` and `PUBLIC_COMMUNITY`.
-  - `[ ]` Add transaction types such as `LOAN`, `GIVEAWAY_DONATION`, and `LIBRARY_DONATION`.
-  - `[x]` Track physical item condition with agreed values such as `NEW`, `GOOD`, `FAIR`, and `POOR`.
-- `[ ]` Update service rules and tests for ownership, visibility, loans, and donations.
+- `[x]` Verify the application context starts through the Spring Boot context test. Controller discovery remains pending because controllers have not been implemented.
+- `[x]` Add library-member ownership to book copies.
+- `[x]` Add copy visibility values `PRIVATE` and `PUBLIC`.
+- `[x]` Track physical copy condition, including `NEW`, `LIKE_NEW`, `GOOD`, `FAIR`, and `POOR`.
+- `[ ]` Add transaction types such as `LOAN`, `GIVEAWAY_DONATION`, and `LIBRARY_DONATION`.
+- `[~]` Update service rules and tests for visibility and lending: public-copy discovery and borrowing of public copies are covered; donation flows and complete owner authorization rules remain.
 
-**Exit criteria:** The dedicated web backend application boots successfully without launching the legacy terminal interface, updated entity models support peer-to-peer ownership and visibility, and core service tests pass.
+**Exit criteria:** The dedicated web backend application boots successfully without launching the legacy terminal interface; domain models and services support peer-to-peer ownership, visibility, loan/donation transaction types, and agreed exchange rules; and the corresponding service tests pass.
 
 ### Phase 2 — REST API & community transaction layer
 
@@ -85,10 +84,10 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 **Goal:** Implement persistent PostgreSQL storage with reproducible migrations and configuration.
 
 - `[x]` Add JPA entity mappings and PostgreSQL dependencies.
-- `[~]` **Configure the datasource:** Read the database URL and credentials from environment-based configuration; checked `application.properties` currently has no PostgreSQL connection values.
-- `[ ]` **Add database migrations:** Select Flyway or Liquibase and create versioned schema changes for users, book items, visibility, and transaction records.
-- `[ ]` **Enforce data integrity:** Add appropriate foreign keys, uniqueness constraints, and indexes for common searches and lookups (for example title, author, ISBN, owner, and visibility).
-- `[ ]` **Add integration testing:** Use Testcontainers or an equivalent PostgreSQL test setup to verify queries, mappings, constraints, and transaction boundaries.
+- `[~]` **Configure the datasource:** Add a PostgreSQL profile with environment-based URL and credentials. The default application profile is still `dev` using H2; verify the PostgreSQL profile and ensure its secrets are supplied through environment variables.
+- `[~]` **Add database migrations:** Add Flyway and an initial migration for current members, books, copies, borrowers, and borrowings. Add and verify follow-on migrations for new transaction types and donation workflows as the domain is completed.
+- `[~]` **Enforce data integrity:** The initial migration defines key foreign keys and uniqueness constraints. Add and review indexes for common search and lookup fields (for example title, author, ISBN, owner, and visibility).
+- `[~]` **Add integration testing:** H2 repository tests currently exercise copy persistence and visibility queries. Add PostgreSQL-backed tests (for example, Testcontainers) to verify schema compatibility, mappings, constraints, and transaction boundaries.
 - `[ ]` Document local database setup and safe handling of credentials; never commit secrets.
 
 **Exit criteria:** The backend connects to PostgreSQL using externalized settings, applies migrations reproducibly, and passes repository integration tests.
@@ -126,8 +125,8 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 
 ## Recommended implementation order
 
-1. **Complete Phase 1 foundation:** Create a dedicated Spring Boot entry point for the web backend (leave the legacy terminal entry point disabled), verify local startup, and add user ownership, visibility, condition, and transaction concepts to the domain.
-2. **Set up Phase 3 persistence:** Configure environment-based PostgreSQL settings, add migrations, and write repository integration tests.
+1. **Finish Phase 1 domain work:** Add loan/donation transaction types, complete ownership and visibility rules in services, and test the remaining lending and donation cases. The web backend entry point, member ownership, visibility, condition tracking, and initial public-copy discovery are already present.
+2. **Verify Phase 3 against PostgreSQL:** Run the existing Flyway migration through the PostgreSQL profile, validate the schema and JPA mappings, then add PostgreSQL integration tests and any required indexes/migrations.
 3. **Develop Phase 2 API:** Implement REST controllers, authentication and authorization, privacy enforcement, and lending/donation transaction handlers.
 4. **Build Phase 4 frontend:** Initialize React and implement personal collection, community discovery, and exchange workflows against the API contract.
 5. **Integrate Phase 5 recommendations:** Define data-use rules and recommendation behavior, then build and connect the recommendation service after core workflows are stable.
