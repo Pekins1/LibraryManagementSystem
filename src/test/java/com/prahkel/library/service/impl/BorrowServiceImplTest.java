@@ -266,13 +266,13 @@ public class BorrowServiceImplTest {
         when(bookCopyRepository.save(copy)).thenReturn(copy);
         when(borrowingRepository.save(borrowing)).thenReturn(borrowing);
 
-        Borrowing result = borrowService.returnBook(new ReturnBookRequest(7L, 20L, BookCondition.LIKE_NEW));
+        Borrowing result = borrowService.returnBook(new ReturnBookRequest(7L, 20L, BookCondition.NEW));
 
         assertNotNull(result);
         assertEquals(BorrowingStatus.RETURNED, result.getStatus());
         assertEquals(LocalDate.of(2026, 9, 15), result.getReturnDate());
         assertTrue(copy.isAvailable());
-        assertEquals(BookCondition.LIKE_NEW, copy.getCondition());
+        assertEquals(BookCondition.NEW, copy.getCondition());
         assertEquals(new BigDecimal("0.00"), result.getLateFee());
 
         verify(bookCopyRepository).save(copy);

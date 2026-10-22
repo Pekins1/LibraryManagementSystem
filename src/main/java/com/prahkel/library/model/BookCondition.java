@@ -5,5 +5,6 @@ public enum BookCondition {
     LIKE_NEW,
     GOOD,
     FAIR,
+    POOR
 
 }

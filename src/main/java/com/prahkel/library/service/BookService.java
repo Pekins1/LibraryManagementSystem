@@ -12,7 +12,7 @@ import com.prahkel.library.dto.CreateBookRequest;
 import com.prahkel.library.dto.UpdateBookRequest;
 import com.prahkel.library.model.Book;
 import com.prahkel.library.model.BookCopy;
-import com.prahkel.library.model.CopyVisibility;
+
 
 public interface BookService {
       Book createBook(@Valid @NotNull CreateBookRequest request);

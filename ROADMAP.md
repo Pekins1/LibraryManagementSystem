@@ -46,13 +46,13 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 - `[x]` Define base domain entities for books, copies, borrowers, and borrowings.
 - `[x]` Establish Spring Data JPA repositories and service layers.
 - `[x]` Implement request DTOs, validation constraints, and domain exceptions.
-- `[ ]` **Create the web backend entry point:** Add a dedicated Spring Boot application class for the web backend. Keep the legacy terminal-based `LibraryApplication.java` disabled; do not reactivate it as the web server entry point.
-- `[ ]` Verify the web application starts and Spring Boot component scanning and dependency injection discover the controllers, services, and repositories.
+- `[x]` **Create the web backend entry point:** Add a dedicated Spring Boot application class for the web backend. Keep the legacy terminal-based `LibraryApplication.java` disabled; do not reactivate it as the web server entry point.
+- `[x]` Verify the web application starts and Spring Boot component scanning and dependency injection discover the controllers, services, and repositories.
 - `[ ]` **Expand the domain models for peer-to-peer operations:**
-  - `[ ]` Add user ownership to book copies.
-  - `[ ]` Add catalog visibility values such as `PRIVATE` and `PUBLIC_COMMUNITY`.
+  - `[x]` Add user ownership to book copies.
+  - `[x]` Add catalog visibility values such as `PRIVATE` and `PUBLIC_COMMUNITY`.
   - `[ ]` Add transaction types such as `LOAN`, `GIVEAWAY_DONATION`, and `LIBRARY_DONATION`.
-  - `[ ]` Track physical item condition with agreed values such as `NEW`, `GOOD`, `FAIR`, and `POOR`.
+  - `[x]` Track physical item condition with agreed values such as `NEW`, `GOOD`, `FAIR`, and `POOR`.
 - `[ ]` Update service rules and tests for ownership, visibility, loans, and donations.
 
 **Exit criteria:** The dedicated web backend application boots successfully without launching the legacy terminal interface, updated entity models support peer-to-peer ownership and visibility, and core service tests pass.

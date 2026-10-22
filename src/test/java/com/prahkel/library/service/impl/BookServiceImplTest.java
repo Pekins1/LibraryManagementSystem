@@ -279,7 +279,7 @@ class BookServiceImplTest {
 
         AddBookCopyRequest request = new AddBookCopyRequest(
             "LMS-9780132350884-01",
-            BookCondition.LIKE_NEW,
+            BookCondition.NEW,
             LocalDate.of(2026,10,02),
             2L,
             CopyVisibility.PRIVATE
