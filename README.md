@@ -44,6 +44,55 @@ src/main/java/
    java -cp bin LibraryApplication
    ```
 
+### Database Setup (PostgreSQL)
+
+The app has two run profiles:
+
+| Profile | Database | Schema | Use |
+|---|---|---|---|
+| `dev` (default) | H2 in-memory | Hibernate `create-drop` | Tests and quick runs; data is disposable |
+| `postgres` | PostgreSQL 17 | Flyway migrations, Hibernate `validate` | Persistent local data |
+
+**1. Install PostgreSQL 17** (Windows):
+
+```powershell
+winget install -e --id PostgreSQL.PostgreSQL.17
+```
+
+The winget installation runs unattended and may leave the `postgres` superuser password set to `postgres`. Change it after installation, for example with `ALTER USER postgres PASSWORD 'your-new-password';`.
+
+**2. Create the application user and database** as the `postgres` superuser:
+
+```sql
+CREATE USER library WITH PASSWORD 'devpassword';
+CREATE DATABASE library OWNER library;
+```
+
+**3. Configure credentials.** The `postgres` profile reads `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` from the environment, falling back to local defaults in `application-postgres.properties`. To use your own values, set them in PowerShell before running:
+
+```powershell
+$env:DB_PASSWORD = 'your-local-password'
+```
+
+Alternatively, copy `.env.example` to `.env` and load it from your IDE run configuration. In VS Code, set `"envFile": "${workspaceFolder}/.env"` in a `launch.json` configuration. Never commit `.env` or a real password. `.env` is gitignored, and the defaults in `application-postgres.properties` are local-only placeholders.
+
+**4. Run with PostgreSQL:**
+
+```powershell
+mvn spring-boot:run "-Dspring-boot.run.profiles=postgres"
+```
+
+On first boot, Flyway applies `src/main/resources/db/migration/V1__initial__schema.sql`. Hibernate then validates the schema against the entities and refuses to start if they disagree. Never edit an applied migration; ship schema changes in new `V2__...`, `V3__...` migration files.
+
+**Reset the local database** (drops all data):
+
+Connect to a different database (such as `postgres`) before running these commands; PostgreSQL cannot drop a database while you are connected to it.
+
+```sql
+DROP DATABASE library;
+CREATE DATABASE library OWNER library;
+```
+
 ## Usage Guide
 
 ### Adding Books
@@ -101,12 +150,11 @@ Custom exceptions for specific error scenarios:
 
 ### Data Persistence
 
-The application uses Java serialization to save and load library data between sessions. It also supports importing and exporting book data in CSV format.
+The application uses JPA/Hibernate with H2 in the default `dev` profile or PostgreSQL in the `postgres` profile. Flyway migrations own the database schema; Hibernate validates it when using PostgreSQL.
 
 ## Future Improvements
 
 - Graphical user interface
-- Database integration (JDBC)
 - User authentication system
 - Advanced search capabilities
 - Book reservation system
