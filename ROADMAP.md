@@ -84,11 +84,11 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 **Goal:** Implement persistent PostgreSQL storage with reproducible migrations and configuration.
 
 - `[x]` Add JPA entity mappings and PostgreSQL dependencies.
-- `[~]` **Configure the datasource:** Add a PostgreSQL profile with environment-based URL and credentials. The default application profile is still `dev` using H2; verify the PostgreSQL profile and ensure its secrets are supplied through environment variables.
+- `[x]` **Configure the datasource:** Add a PostgreSQL profile with environment-based URL and credentials. The default application profile is `dev` using H2; PostgreSQL credentials can be supplied through environment variables.
 - `[~]` **Add database migrations:** Add Flyway and an initial migration for current members, books, copies, borrowers, and borrowings. Add and verify follow-on migrations for new transaction types and donation workflows as the domain is completed.
 - `[~]` **Enforce data integrity:** The initial migration defines key foreign keys and uniqueness constraints. Add and review indexes for common search and lookup fields (for example title, author, ISBN, owner, and visibility).
 - `[~]` **Add integration testing:** H2 repository tests currently exercise copy persistence and visibility queries. Add PostgreSQL-backed tests (for example, Testcontainers) to verify schema compatibility, mappings, constraints, and transaction boundaries.
-- `[ ]` Document local database setup and safe handling of credentials; never commit secrets.
+- `[x]` Document local PostgreSQL setup and safe handling of credentials; `.env` is gitignored and `.env.example` contains local placeholder values only.
 
 **Exit criteria:** The backend connects to PostgreSQL using externalized settings, applies migrations reproducibly, and passes repository integration tests.
 
