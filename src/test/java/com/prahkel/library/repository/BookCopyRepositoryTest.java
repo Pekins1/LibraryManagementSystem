@@ -1,6 +1,9 @@
 package com.prahkel.library.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import jakarta.persistence.PersistenceException;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -10,9 +13,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-
-
+import org.springframework.test.context.TestPropertySource;
 
 import com.prahkel.library.model.Book;
 import com.prahkel.library.model.BookCondition;
@@ -22,7 +25,8 @@ import com.prahkel.library.model.LibraryMember;
 import com.prahkel.library.model.MemberType;
 
 @DataJpaTest
-
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@TestPropertySource(locations = "classpath:application-pgtest.properties")
 class BookCopyRepositoryTest {
 
     @Autowired 
@@ -95,6 +99,34 @@ class BookCopyRepositoryTest {
         assertThat(result).containsExactly(publicSecondCopy);
         assertThat(result.get(0).getBarcode()).isEqualTo("BC-PUBLIC-2");
         assertThat(result.get(0).isAvailable()).isTrue();
+    }
+
+    @Test 
+    void bookCopyBarcode_shouldThrowWhenDuplicateBarcodeIsFound(){
+        LibraryMember owner = entityManager.persistAndFlush(
+            new LibraryMember("Test Owner", "owner@test.com", MemberType.INDIVIDUAL)
+        );
+
+       Book bookTwo = entityManager.persistAndFlush(
+                new Book("Dune", "Frank Herbert", "Sci-Fi", "9780441172719", 1965)
+        );
+
+        BookCopy publicCopyOne = new BookCopy("BC-PUBLIC", BookCondition.GOOD,
+                LocalDate.now(), owner, CopyVisibility.PUBLIC);
+        publicCopyOne.setBook(bookTwo);
+        entityManager.persistAndFlush(publicCopyOne);
+
+        BookCopy publicCopyTwo = new BookCopy("BC-PUBLIC", BookCondition.GOOD,
+                LocalDate.now(), owner, CopyVisibility.PUBLIC);
+        publicCopyTwo.setBook(bookTwo);
+        publicCopyTwo.setIsAvailable(false);
+        
+
+        assertThatThrownBy(() ->
+                entityManager.persistAndFlush(publicCopyTwo))
+                .isInstanceOf(PersistenceException.class)
+                .rootCause()
+                .hasMessageContaining("book_copy_barcode");
     }
     
 }
