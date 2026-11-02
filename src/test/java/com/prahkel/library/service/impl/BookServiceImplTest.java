@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.prahkel.library.dto.AddBookCopyRequest;
 import com.prahkel.library.dto.CreateBookRequest;
 import com.prahkel.library.dto.UpdateBookRequest;
+import com.prahkel.library.dto.UpdateCopyVisibilityRequest;
 import com.prahkel.library.exception.BookAlreadyExistsException;
 import com.prahkel.library.exception.BookCopyAlreadyExistException;
 import com.prahkel.library.exception.BookCopyDeletionNotAllowedException;
@@ -923,6 +924,52 @@ class BookServiceImplTest {
         
         verify(bookRepository).findById(bookId);
 
+    }
+
+    @Test
+    void setCopyVisibility_shouldReturnCopyWithUpdatedVisibilityWhenFound() {
+        Long copyId = 5L;
+        LibraryMember owner = new LibraryMember(
+            "Rahkel Pekins",
+            "rahkel@example.com",
+            MemberType.INDIVIDUAL
+        );
+        BookCopy copy = new BookCopy(
+            "LMS-9780132350884-01",
+            BookCondition.FAIR,
+            LocalDate.of(2026, 10, 3),
+            owner,
+            CopyVisibility.PRIVATE
+        );
+        copy.setId(copyId);
+        UpdateCopyVisibilityRequest request =
+            new UpdateCopyVisibilityRequest(CopyVisibility.PUBLIC);
+
+        when(bookCopyRepository.findById(copyId)).thenReturn(Optional.of(copy));
+        when(bookCopyRepository.save(copy)).thenReturn(copy);
+
+        BookCopy result = bookService.setCopyVisibility(copyId, request);
+
+        assertSame(copy, result);
+        assertEquals(CopyVisibility.PUBLIC, result.getVisibility());
+        verify(bookCopyRepository).findById(copyId);
+        verify(bookCopyRepository).save(copy);
+    }
+
+    @Test
+    void setCopyVisibility_shouldThrowWhenCopyIsNotFound() {
+        Long copyId = 5L;
+        UpdateCopyVisibilityRequest request =
+            new UpdateCopyVisibilityRequest(CopyVisibility.PUBLIC);
+        when(bookCopyRepository.findById(copyId)).thenReturn(Optional.empty());
+
+        assertThrows(
+            BookCopyNotFoundException.class,
+            () -> bookService.setCopyVisibility(copyId, request)
+        );
+
+        verify(bookCopyRepository).findById(copyId);
+        verify(bookCopyRepository, never()).save(any(BookCopy.class));
     }
 
 

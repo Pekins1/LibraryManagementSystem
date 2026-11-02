@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Lock;
 
 import com.prahkel.library.model.BookCondition;
 import com.prahkel.library.model.BookCopy;
+import com.prahkel.library.model.BookLifecycleStatus;
 import com.prahkel.library.model.CopyVisibility;
 
 import jakarta.persistence.LockModeType;
@@ -35,6 +36,11 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
         Long bookId,
         Collection<BookCondition> conditions
     );
+
+    List<BookCopy> findByIsAvailableTrueAndVisibilityAndBookLifecycle(
+        CopyVisibility visibility, BookLifecycleStatus lifecycle
+    );
+
 
     boolean existsByBarcode(String barcode);
 

@@ -10,8 +10,10 @@ import java.util.*;
 import com.prahkel.library.dto.AddBookCopyRequest;
 import com.prahkel.library.dto.CreateBookRequest;
 import com.prahkel.library.dto.UpdateBookRequest;
+import com.prahkel.library.dto.UpdateCopyVisibilityRequest;
 import com.prahkel.library.model.Book;
 import com.prahkel.library.model.BookCopy;
+
 
 
 public interface BookService {
@@ -47,6 +49,10 @@ public interface BookService {
 
       List<Book> findBooksByTitleAndAuthor(@NotBlank String title, @NotBlank String author);
 
+      List<Book> findBooksByTitleAndGenre(@NotBlank String title, @NotBlank String genre);
+
+      List<Book> findBooksByTitleAndAuthorAndGenre(@NotBlank String title, @NotBlank String author, @NotBlank String genre);
+
       long countAvailableBooks();
 
       long countUnavailableBooks();
@@ -56,6 +62,10 @@ public interface BookService {
       void deleteBook(@NotNull @Positive Long bookId);
 
       Book updateBook(@Positive Long id, @Valid @NotNull UpdateBookRequest request);
+
+      BookCopy setCopyVisibility(@NotNull @Positive Long copyId, @Valid @NotNull UpdateCopyVisibilityRequest request);
+
+      List<BookCopy> getDiscoverableCopies();
 
 
 }

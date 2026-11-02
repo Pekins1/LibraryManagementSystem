@@ -43,6 +43,24 @@ public interface BookRepository extends JpaRepository<Book, Long> {
       @Param("title") String title,
       @Param("author") String author
    );
+
+   @Query("SELECT b FROM Book b WHERE b.lifecycle = com.prahkel.library.model.BookLifecycleStatus.ACTIVE " +
+         "AND LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%')) " +
+         "AND LOWER(b.genre) LIKE LOWER(CONCAT('%', :genre, '%'))")
+   List<Book> findByTitleContainingIgnoreCaseAndGenreContainingIgnoreCase(
+      @Param("title") String title,
+      @Param("genre") String genre
+   );
+   
+   @Query("SELECT b FROM Book b WHERE b.lifecycle = com.prahkel.library.model.BookLifecycleStatus.ACTIVE " +
+      "AND LOWER(b.title) LIKE LOWER(CONCAT('%', :title, '%')) " +
+      "AND LOWER(b.author) LIKE LOWER(CONCAT('%', :author, '%'))" +
+      "AND LOWER(b.genre) LIKE LOWER(CONCAT('%', :genre, '%'))")
+   List<Book> findByTitleContainingIgnoreCaseAndAuthorContainingIgnoreCaseAndGenreContainingIgnoreCase(
+      @Param("title") String title,
+      @Param("author") String author,
+      @Param("genre") String genre
+   );
     
     // check if a book with the same ISBN already exists in the database
     boolean existsByIsbn(String isbn);
