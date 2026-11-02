@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import com.prahkel.library.dto.AddBookCopyRequest;
 import com.prahkel.library.dto.CreateBookRequest;
 import com.prahkel.library.dto.UpdateBookRequest;
+import com.prahkel.library.dto.UpdateCopyVisibilityRequest;
 import com.prahkel.library.exception.BookAlreadyExistsException;
 import com.prahkel.library.exception.BookCopyAlreadyExistException;
 import com.prahkel.library.exception.BookCopyDeletionNotAllowedException;
@@ -212,6 +213,18 @@ public class BookServiceImpl implements BookService{
     }
 
     @Transactional
+    public BookCopy setCopyVisibility(
+        @NotNull @Positive Long copyId,
+        @Valid @NotNull UpdateCopyVisibilityRequest request) {
+        BookCopy copy = bookCopyRepository.findById(copyId)
+            .orElseThrow(() -> new BookCopyNotFoundException(
+                    "Copy not found with id: " + copyId));
+        copy.setVisibility(request.visibility());   // <-- the entity setter, used here
+        return bookCopyRepository.save(copy);
+    }
+
+
+    @Transactional
     public void deleteCopy(@NotNull @Positive Long copyId){
         BookCopy copy =bookCopyRepository.findById(copyId)
             .orElseThrow(() -> new BookCopyNotFoundException("Copy with ID: " + copyId + " not found.")
@@ -272,6 +285,11 @@ public class BookServiceImpl implements BookService{
         return bookRepository.findByGenreContainingIgnoreCase(genre);
     }
 
+    public List<BookCopy> getDiscoverableCopies(){
+        return bookCopyRepository.findByIsAvailableTrueAndVisibilityAndBookLifecycle(
+            CopyVisibility.PUBLIC, BookLifecycleStatus.ACTIVE);
+    }
+
     // Optional area but good to have.
     public List<Book> findBooksByAuthorAndGenre(@NotBlank String author, @NotBlank String genre) {
         return bookRepository.findByAuthorContainingIgnoreCaseAndGenreContainingIgnoreCase(author, genre);
@@ -279,6 +297,15 @@ public class BookServiceImpl implements BookService{
 
     public List<Book> findBooksByTitleAndAuthor(@NotBlank  String title, @NotBlank String author) {
         return bookRepository.findByTitleContainingIgnoreCaseAndAuthorContainingIgnoreCase(title, author);
+    }
+
+    public List<Book> findBooksByTitleAndGenre(@NotBlank  String title, @NotBlank String genre) {
+    return bookRepository.findByTitleContainingIgnoreCaseAndGenreContainingIgnoreCase(title, genre);
+    }
+
+
+    public List<Book> findBooksByTitleAndAuthorAndGenre(@NotBlank String title, @NotBlank String author, @NotBlank String genre){
+        return bookRepository.findByTitleContainingIgnoreCaseAndAuthorContainingIgnoreCaseAndGenreContainingIgnoreCase(title, author, genre); 
     }
 
     public long countAvailableBooks() {
