@@ -19,7 +19,7 @@ import com.prahkel.library.model.BookCopy;
 public interface BookService {
       Book createBook(@Valid @NotNull CreateBookRequest request);
 
-      List<Book> createBooks(@NotEmpty List<@Valid CreateBookRequest> requests);
+      List<Book> createBooks(@NotEmpty List<@Valid CreateBookRequest> requests); 
 
       BookCopy addCopyToBook(@NotNull @Positive Long bookId, @Valid @NotNull AddBookCopyRequest request);
 
