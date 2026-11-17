@@ -443,4 +443,40 @@ class CatalogControllerTest {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.status").value(404));
     }
+
+    @Test
+    void handleValidation_shouldReturn400WithFieldErrors() throws Exception {
+        String invalidBody = """
+                {"author":"Frank Herbert","genre":"Sci-Fi",
+                "isbn":"9780441172719","publishedYear":1965}
+                """;
+
+        mockMvc.perform(post("/api/v1/catalog")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(containsString("title")));
+
+        verify(bookService, never()).createBook(any());
+    }
+
+    @Test
+    void handleSpringBadRequest_shouldReturn400WhenPathVariableTypeIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/v1/catalog/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+    
+    @Test
+    void handleInternalServerError_shouldReturn500WhenServiceThrowsUnexpectedException() throws Exception {
+        when(bookService.getBookById(1L)).thenThrow(new RuntimeException("boom"));
+
+        mockMvc.perform(get("/api/v1/catalog/1"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
+    }
+
+
 }
