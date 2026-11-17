@@ -2,9 +2,6 @@ package com.prahkel.library.controller;
 
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -15,7 +12,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.postgresql.translation.messages_bg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -24,7 +20,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.prahkel.library.dto.BorrowBookRequest;
 import com.prahkel.library.dto.ReturnBookRequest;
-import com.prahkel.library.exception.BookCopyNotFoundException;
 import com.prahkel.library.exception.BookNotAvailableException;
 import com.prahkel.library.exception.BookNotBorrowedException;
 import com.prahkel.library.exception.BorrowingNotFoundException;
