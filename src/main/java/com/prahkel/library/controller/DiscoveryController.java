@@ -18,7 +18,7 @@ import com.prahkel.library.service.BookService;
 
 
 @RestController                          // 1: this class serves HTTP, and return values become JSON
-@RequestMapping("/api/v1/dicovery")       // 2: every method below starts with this path
+@RequestMapping("/api/v1/discovery")       // 2: every method below starts with this path
 @Validated                              // 3: turns on validation for @PathVariable/@RequestParam
 public class DiscoveryController {
 
