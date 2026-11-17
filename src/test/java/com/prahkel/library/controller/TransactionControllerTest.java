@@ -147,7 +147,7 @@ public class TransactionControllerTest {
     }
 
     @Test 
-    void getBorrowingById_shouldReturn200WhenBorrowingBorrowingExists() throws Exception{
+    void getBorrowingById_shouldReturn200WhenBorrowingExists() throws Exception{
         Borrower borrower = new Borrower("test", "example@gmail.com");
         borrower.setId(9L);
 
@@ -176,7 +176,7 @@ public class TransactionControllerTest {
     }
 
     @Test 
-    void getBorrowingById_shouldReturn404WhenBorrowingBorrowingDoesNotExist() throws Exception{
+    void getBorrowingById_shouldReturn404WhenBorrowingDoesNotExist() throws Exception{
         when(borrowService.getBorrowingById(40L)).thenThrow(
             new BorrowingNotFoundException("Borrowing with Id: 40 not found.")
         );
