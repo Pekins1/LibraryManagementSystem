@@ -6,9 +6,9 @@ Use this guide to track the transition from a traditional library management sys
 
 ## Status snapshot
 
-**Reviewed:** 2026-10-22  
+**Reviewed:** 2026-11-22
 **Current phase:** Phase 1 — Core Architecture & Domain Modernization (in progress)  
-**Next recommended work:** Finish Phase 1 by defining loan/donation transaction types and completing service rules/tests; then verify the PostgreSQL profile and migration against a real PostgreSQL database.
+**Next recommended work:** Finish Phase 1 by defining loan/donation transaction types and completing service rules/tests; continue Phase 2 by adding authorization, donation endpoints, and API documentation.
 
 Status reflects files found in the repository on the reviewed date; it is not a claim that an item has been tested or deployed.
 
@@ -30,12 +30,12 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 
 | Area | Status | Repository evidence / implementation details |
 |---|---|---|
-| Core domain and service layers | `[~]` | Domain models, services, DTOs, repositories, and exceptions are present. A dedicated `P2PLibraryWebApplication` entry point exists and the Spring context test passes. Book copies now have library-member ownership, `PRIVATE`/`PUBLIC` visibility, and physical condition. Loan/donation transaction types and donation workflows are not implemented. The legacy terminal `LibraryApplication.java` remains disabled. |
-| API and transport layer | `[ ]` | Spring Web and validation dependencies are present, but active REST controllers or GraphQL schemas were not found. |
+| Core domain and service layers | `[~]` | Domain models, services, DTOs, repositories, and exceptions are present. `ReportServiceImpl` provides reporting delegates, counts, overdue-borrowing filtering, and late-fee totals. A dedicated `P2PLibraryWebApplication` entry point exists and the Spring context test passes. Book copies have library-member ownership, `PRIVATE`/`PUBLIC` visibility, and physical condition. Loan/donation transaction types and donation workflows are not implemented. The legacy terminal `LibraryApplication.java` remains disabled. |
+| API and transport layer | `[~]` | Active REST endpoints are implemented by `CatalogController`, `DiscoveryController`, `MemberController`, and `TransactionController`; `GlobalExceptionHandler` handles API errors. Authentication/authorization, donation endpoints, and OpenAPI documentation remain outstanding. |
 | PostgreSQL persistence | `[~]` | JPA mappings, repositories, PostgreSQL driver, a PostgreSQL profile with environment-based connection values, Flyway dependencies, and an initial schema migration are present. The default profile is still `dev` with H2; PostgreSQL migration execution and mappings have not yet been verified against PostgreSQL. |
 | React frontend dashboard | `[ ]` | A frontend application workspace was not found. |
 | AI recommendation engine | `[ ]` | No recommendation algorithms or AI integration were found. |
-| Automated testing | `[~]` | Maven tests pass: 47 tests across application-context, repository, and service suites. Public-copy discovery and core service behavior have tests. API, donation workflow, authorization, and PostgreSQL integration tests remain to be added. |
+| Automated testing | `[~]` | The Maven test suite passes: 110 tests across controller, application-context, repository, and service suites. Controller routes, public-copy discovery, repository behavior, and core service behavior have tests. Donation workflow and authorization coverage remain outstanding. |
 
 ## Roadmap and checklists
 
@@ -47,7 +47,7 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 - `[x]` Establish Spring Data JPA repositories and service layers.
 - `[x]` Implement request DTOs, validation constraints, and domain exceptions.
 - `[x]` **Create the web backend entry point:** Add a dedicated Spring Boot application class for the web backend. Keep the legacy terminal-based `LibraryApplication.java` disabled; do not reactivate it as the web server entry point.
-- `[x]` Verify the application context starts through the Spring Boot context test. Controller discovery remains pending because controllers have not been implemented.
+- `[x]` Verify the application context starts through the Spring Boot context test; controller mappings and error handling also have focused Web MVC tests.
 - `[x]` Add library-member ownership to book copies.
 - `[x]` Add copy visibility values `PRIVATE` and `PUBLIC`.
 - `[x]` Track physical copy condition, including `NEW`, `LIKE_NEW`, `GOOD`, `FAIR`, and `POOR`.
@@ -60,12 +60,12 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 
 **Goal:** Expose endpoints for personal inventories, privacy settings, discovery, and exchange transactions.
 
-- `[ ]` **User and inventory management:**
-  - `[ ]` Implement `POST /api/v1/catalog` to add books to a personal inventory.
-  - `[ ]` Implement `PATCH /api/v1/catalog/{id}/visibility` to change catalog visibility.
-- `[ ]` **Community exchange and discovery:**
-  - `[ ]` Implement `GET /api/v1/discovery` to browse community books available for borrowing or donation.
-  - `[ ]` Implement `POST /api/v1/transactions/borrow` to request a book loan.
+- `[~]` **User and inventory management:**
+  - `[x]` Implement `POST /api/v1/catalog` to add books to a personal inventory.
+  - `[x]` Implement `PATCH /api/v1/catalog/{copyId}/visibility` to change copy visibility.
+- `[~]` **Community exchange and discovery:**
+  - `[x]` Implement `GET /api/v1/discovery` to browse community books.
+  - `[x]` Implement `POST /api/v1/transactions/borrow` to request a book loan.
   - `[ ]` Implement `POST /api/v1/transactions/donate` for listing or claiming donated books; define the exact workflow and permissions before implementation.
 - `[ ]` **Security and authorization:**
   - `[ ]` Select and implement an authentication approach (for example, OAuth2/OIDC or JWT).
@@ -73,9 +73,9 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 - `[ ]` **Validation and exception handling:**
   - `[ ]` Validate requests and apply privacy and availability rules (for example, reject requests for private books).
   - `[ ]` Return consistent structured errors from global exception handling.
-- `[ ]` **API documentation and tests:**
+- `[~]` **API documentation and tests:**
   - `[ ]` Generate OpenAPI documentation for public and authenticated endpoints.
-  - `[ ]` Test successful requests, validation failures, authorization failures, and transaction state changes.
+  - `[~]` Controller tests cover existing routes and error handling; authorization and donation cases remain.
 
 **Exit criteria:** Endpoints validate input, enforce privacy rules, manage exchange states, are documented, and pass API-level tests.
 
