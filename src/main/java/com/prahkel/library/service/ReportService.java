@@ -11,7 +11,7 @@ public interface ReportService {
 
     long getTotalBookCount();
 
-    long getArchivedBookCount();
+    long getTotalArchivedBookCount();
 
     long getTotalBookCopyCount();
 

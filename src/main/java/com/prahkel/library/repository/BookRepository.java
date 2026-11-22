@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.prahkel.library.model.Book;
+import com.prahkel.library.model.BookLifecycleStatus;
 
 import java.util.Optional;
 import java.util.List;
@@ -90,4 +91,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
        "AND NOT EXISTS (SELECT c2.id FROM BookCopy c2 " +
        "WHERE c2.book = b AND c2.isAvailable = true)")
     Long countBooksWithUnavailableCopies();
+
+    
+    long countByLifecycle(BookLifecycleStatus lifecycle);
 }
