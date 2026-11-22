@@ -1,48 +1,99 @@
 # Library Management System
 
-See the [modernization roadmap](./ROADMAP.md) for the current phase, implementation checklist, and recommended next steps.
+**A Spring Boot REST API for traditional library management and peer-to-peer book sharing.** See the [modernization roadmap](./ROADMAP.md) for the full plan.
 
 ## Overview
 
-This repository is modernizing a traditional library management system into a peer-to-peer book sharing platform. The backend currently contains domain, service, DTO, and persistence foundations; the target capabilities and implementation checklist are tracked in the [modernization roadmap](./ROADMAP.md).
+LibraryManagementSystem catalogs books and individual-owned copies, with copies marked `PRIVATE` for owner-only use or `PUBLIC` for community discovery and borrowing. Platform members discover and borrow public copies, while borrowings are tracked from loan through return. The domain also distinguishes `LibraryMember`, a platform member that owns copies, from `Borrower`, an external patron associated with a library or organization member.
+
+The system is being modernized into a peer-to-peer book-sharing platform where individuals and organizations can manage their collections and exchanges. Owners can also give books away or donate them in the future, but the donation workflow is not implemented yet.
+
+The architecture is layered: controllers handle REST resources, services implement business rules, and repositories persist domain entities through Spring Data JPA. `GlobalExceptionHandler` returns structured errors as `{timestamp, status, error, message, path}`.
+
+The domain model includes `Book`, `BookCopy`, `LibraryMember`, `Borrower`, and `Borrowing`.
+
+## Tech stack
+
+- Java 21
+- Spring Boot 4.1
+- Spring Data JPA
+- Flyway
+- PostgreSQL 17
+- H2 (dev profile)
+- JUnit 5 + Mockito
+- Maven
 
 ## Features
 
-- **Book Management**: Add, remove, and search for books
-- **Borrowing System**: Track who has borrowed books and manage returns
-- **Search Functionality**: Find books by ISBN, title, author, or genre
-- **Reporting**: View all available books and generate borrower reports
-- **Data Persistence**: Save and load library data between sessions
-- **Import/Export**: Support for CSV import and export
+- REST API for catalog, member, transaction, and discovery resources
+- Member-owned book copies with `PRIVATE` and `PUBLIC` visibility
+- Community discovery of available public copies
+- Borrowing and return workflows
+- Reporting through the 16-method `ReportService`, including counts, active and overdue borrowings, borrower history, and late fees (`$1.50` per day for 14-day loans, with overdue status calculated from due dates)
+- Structured validation and application error responses
+- PostgreSQL/Flyway persistence and H2 development persistence
+- 110 passing tests
 
-## Project Structure
+## Project structure
 
-src/main/java/
-├── LibraryApplication.java (Main class)
-├── model/
-│ ├── Book.java (Book entity)
-│ └── Library.java (Core business logic)
-├── exception/
-│ ├── BookAlreadyExistsException.java
-│ ├── BookNotFoundException.java
-│ ├── BookNotAvailableException.java
-│ ├── BookNotBorrowedException.java
-│ └── BorrowLimitExceededException.java
-└── util/
-└── FileUtils.java (Data persistence utilities)
+```text
+.
+├── mvnw
+├── pom.xml
+├── README.md
+├── ROADMAP.md
+├── src/
+│   ├── legacy/
+│   │   ├── LibraryApplication.java.disabled
+│   │   ├── LibraryServiceTest.java.disabled
+│   │   ├── library.data
+│   │   ├── test1
+│   │   └── util.disaple/
+│   │       └── FileUtils.java.disabled
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/prahkel/library/
+│   │   │       ├── P2PLibraryWebApplication.java
+│   │   │       ├── config/
+│   │   │       ├── controller/
+│   │   │       │   └── exceptionHandler/
+│   │   │       ├── dto/
+│   │   │       ├── exception/
+│   │   │       ├── model/
+│   │   │       ├── repository/
+│   │   │       └── service/
+│   │   │           └── impl/
+│   │   └── resources/
+│   │       └── db/migration/
+│   │           └── V1__initial__schema.sql
+│   └── test/
+│       ├── java/
+│       │   └── com/prahkel/library/
+│       └── resources/
+│           ├── application-pgtest.properties
+│           ├── application-test.properties
+│           └── application.properties
+```
 
-## Setup Instructions
+The root Java package is `com.prahkel.library`. It contains the entry point `P2PLibraryWebApplication` and the requested application layers. Legacy sources and data under `src/legacy/` are disabled and not compiled or run.
 
-1. Ensure you have Java JDK 21 installed and selected as `JAVA_HOME`
-2. Clone the repository or download the source code
-3. Compile the project:
-   ```
-   javac -d bin src/main/java/*.java src/main/java/*/*.java
-   ```
-4. Run the application:
-   ```
-   java -cp bin LibraryApplication
-   ```
+## Setup & run
+
+JDK 21 is required.
+
+The default `dev` profile uses H2 in-memory persistence:
+
+```powershell
+./mvnw spring-boot:run
+```
+
+Run the test suite:
+
+```powershell
+./mvnw test
+```
+
+The `postgres` profile is documented in the Database Setup section below.
 
 ### Database Setup (PostgreSQL)
 
@@ -93,82 +144,94 @@ DROP DATABASE library;
 CREATE DATABASE library OWNER library;
 ```
 
-## Usage Guide
+## API endpoints
 
-### Adding Books
+### Catalog
 
-Select option 1 from the main menu and follow prompts to enter:
+Base path: `/api/v1/catalog`
 
-- Book title
-- Author name
-- Genre
-- ISBN
-- Publication year
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/v1/catalog` | Create a book |
+| `GET` | `/api/v1/catalog` | Search books by title, author, or genre |
+| `GET` | `/api/v1/catalog/{id}` | Get a book by id |
+| `PUT` | `/api/v1/catalog/{id}` | Update a book |
+| `DELETE` | `/api/v1/catalog/{id}` | Delete a book |
+| `POST` | `/api/v1/catalog/{id}/copies` | Add a copy to a book |
+| `GET` | `/api/v1/catalog/{id}/copies` | List copies of a book |
+| `GET` | `/api/v1/catalog/{id}/copies/available` | List available copies of a book |
+| `DELETE` | `/api/v1/catalog/{id}/copies/{copyId}` | Delete a copy |
+| `POST` | `/api/v1/catalog/{id}/archive` | Archive a book |
+| `PATCH` | `/api/v1/catalog/{copyId}/visibility` | Change a copy's visibility (`PRIVATE` or `PUBLIC`) |
 
-### Borrowing Books
+### Members
 
-1. Select option 4 from the main menu
-2. Enter the ISBN of the book to borrow
-3. Enter the borrower's name
+Base path: `/api/v1/members`
 
-### Returning Books
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/v1/members` | Create a member |
+| `GET` | `/api/v1/members/{id}` | Get a member by id |
+| `GET` | `/api/v1/members?email=...` | Get a member by email |
 
-1. Select option 5 from the main menu
-2. Enter the ISBN of the book being returned
-3. Enter the borrower's name
+### Transactions
 
-### Searching Books
+Base path: `/api/v1/transactions`
 
-1. Select option 3 from the main menu
-2. Choose search criteria (ISBN, title, author, or genre)
-3. Enter the search term
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/v1/transactions/borrow` | Borrow a copy |
+| `POST` | `/api/v1/transactions/return` | Return a copy |
+| `GET` | `/api/v1/transactions/{id}` | Get a transaction by id |
+| `GET` | `/api/v1/transactions/active` | List all active borrowings |
+| `GET` | `/api/v1/transactions/overdue` | List overdue borrowings |
+| `GET` | `/api/v1/transactions/borrower/{borrowerId}/active` | List active borrowings for a borrower |
+| `GET` | `/api/v1/transactions/borrower/{borrowerId}/history` | List a borrower's borrowing history |
 
-### Saving Data
+### Discovery
 
-Data is automatically saved when exiting the application (option 0)
+Base path: `/api/v1/discovery`
 
-## Technical Details
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/discovery` | Browse discoverable public, available copies |
 
-### Requirements
+### Curl examples
 
-- Java JDK 21
+Create a book:
 
-### Object Model
+```bash
+curl -X POST http://localhost:8080/api/v1/catalog \
+  -H "Content-Type: application/json" \
+  -d '{"title":"The Hobbit","author":"J.R.R. Tolkien","genre":"Fantasy","isbn":"978-0-618-00221-3","publishedYear":1937}'
+```
 
-- **Book**: Represents a book with title, author, genre, ISBN, publication year, and availability status
-- **Library**: Manages the collection of books and borrowing operations
+Borrow a copy:
 
-### Exception Handling
+```bash
+curl -X POST http://localhost:8080/api/v1/transactions/borrow \
+  -H "Content-Type: application/json" \
+  -d '{"bookId":1,"borrowerId":1}'
+```
 
-Custom exceptions for specific error scenarios:
+## Testing
 
-- BookAlreadyExistsException
-- BookNotFoundException
-- BookNotAvailableException
-- BookNotBorrowedException
-- BorrowLimitExceededException
+Run the complete Maven test suite with:
 
-### Data Persistence
+```powershell
+./mvnw test
+```
 
-The application uses JPA/Hibernate with H2 in the default `dev` profile or PostgreSQL in the `postgres` profile. Flyway migrations own the database schema; Hibernate validates it when using PostgreSQL.
+The repository currently has 110 tests. The 3 repository tests connect to a local PostgreSQL `library_test` database (see `src/test/resources/application-pgtest.properties`), so PostgreSQL must be running locally or those 3 tests will fail.
 
-## Future Improvements
+## History
 
-- Graphical user interface
-- User authentication system
-- Advanced search capabilities
-- Book reservation system
-- Late return tracking and fines
+The project started as a CLI app: a single `Library` class with menu-driven interaction and JSON-file persistence (`FileUtils`). It is being modernized into a Spring Boot platform. The legacy code is preserved under `src/legacy/` as disabled files for reference — it is not compiled or run.
+
+## What's next
+
+Planned work includes authentication and authorization, OpenAPI documentation, donation endpoints, a React web interface, and AI recommendations. See [ROADMAP.md](./ROADMAP.md) for the full plan.
 
 ## Contributing
 
-This project was created as a learning exercise. Feel free to fork the repository and enhance it with your own improvements. Some possible contributions:
-
-- Adding unit tests
-- Implementing any of the future improvements
-- Enhancing validation and error handling
-- Improving code documentation
-
----
-
-_This project was developed as part of a Java programming curriculum focused on object-oriented programming, collections, and exception handling._
+This is a portfolio project. Contributions that improve the REST API, persistence, reporting, validation, documentation, or platform workflows are welcome.
