@@ -1,10 +1,13 @@
 package com.prahkel.library.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import com.prahkel.library.model.BookLifecycleStatus;
 import com.prahkel.library.model.Borrowing;
 import com.prahkel.library.model.BorrowingStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import java.util.Optional;
@@ -97,6 +100,9 @@ public interface BorrowingRepository extends JpaRepository<Borrowing, Long> {
         LocalDate date, 
         Collection<BorrowingStatus> statuses
     );
+
+    @Query("SELECT COALESCE(SUM(b.lateFee), 0) FROM Borrowing b")
+    BigDecimal sumLateFees();
 
 
 }
