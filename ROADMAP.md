@@ -8,7 +8,7 @@ Use this guide to track the transition from a traditional library management sys
 
 **Reviewed:** 2026-11-22
 **Current phase:** Phase 1 — Core Architecture & Domain Modernization (in progress)  
-**Next recommended work:** Finish Phase 1 by defining loan/donation transaction types and completing service rules/tests; continue Phase 2 by adding authorization, donation endpoints, and API documentation.
+**Next recommended work:** Begin Phase 1 transaction-type work by defining loan/donation transaction types and completing service rules/tests; then continue Phase 2 by adding authorization, donation endpoints, and API documentation.
 
 Status reflects files found in the repository on the reviewed date; it is not a claim that an item has been tested or deployed.
 
@@ -30,9 +30,9 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 
 | Area | Status | Repository evidence / implementation details |
 |---|---|---|
-| Core domain and service layers | `[~]` | Domain models, services, DTOs, repositories, and exceptions are present. `ReportServiceImpl` provides reporting delegates, counts, overdue-borrowing filtering, and late-fee totals. A dedicated `P2PLibraryWebApplication` entry point exists and the Spring context test passes. Book copies have library-member ownership, `PRIVATE`/`PUBLIC` visibility, and physical condition. Loan/donation transaction types and donation workflows are not implemented. The legacy terminal `LibraryApplication.java` remains disabled. |
+| Core domain and service layers | `[~]` | Domain models, services, DTOs, repositories, and exceptions are present. `ReportServiceImpl` provides reporting delegates, counts, overdue-borrowing filtering, and late-fee totals. A dedicated `P2PLibraryWebApplication` entry point exists and the Spring context test passes. Book copies have library-member ownership, `PRIVATE`/`PUBLIC` visibility, and physical condition. Loan/donation transaction types and donation workflows are not implemented. The legacy terminal `LibraryApplication.java` remains disabled at `src/legacy/LibraryApplication.java.disabled`. |
 | API and transport layer | `[~]` | Active REST endpoints are implemented by `CatalogController`, `DiscoveryController`, `MemberController`, and `TransactionController`; `GlobalExceptionHandler` handles API errors. Authentication/authorization, donation endpoints, and OpenAPI documentation remain outstanding. |
-| PostgreSQL persistence | `[~]` | JPA mappings, repositories, PostgreSQL driver, a PostgreSQL profile with environment-based connection values, Flyway dependencies, and an initial schema migration are present. The default profile is still `dev` with H2; PostgreSQL migration execution and mappings have not yet been verified against PostgreSQL. |
+| PostgreSQL persistence | `[~]` | JPA mappings, repositories, PostgreSQL driver, a PostgreSQL profile with environment-based connection values, Flyway dependencies, and an initial schema migration are present. The default profile is still `dev` with H2; PostgreSQL migration execution and mappings are verified against PostgreSQL. |
 | React frontend dashboard | `[ ]` | A frontend application workspace was not found. |
 | AI recommendation engine | `[ ]` | No recommendation algorithms or AI integration were found. |
 | Automated testing | `[~]` | The Maven test suite passes: 110 tests across controller, application-context, repository, and service suites. Controller routes, public-copy discovery, repository behavior, and core service behavior have tests. Donation workflow and authorization coverage remain outstanding. |
@@ -71,8 +71,8 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
   - `[ ]` Select and implement an authentication approach (for example, OAuth2/OIDC or JWT).
   - `[ ]` Restrict personal catalogs and enforce ownership and transaction permissions.
 - `[ ]` **Validation and exception handling:**
-  - `[ ]` Validate requests and apply privacy and availability rules (for example, reject requests for private books).
-  - `[ ]` Return consistent structured errors from global exception handling.
+  - `[~]` Validate requests and apply privacy and availability rules (for example, reject requests for private books). Request validation and public-copy borrowing are implemented; complete owner authorization remains.
+    - `[x]` Return consistent structured errors from global exception handling.
 - `[~]` **API documentation and tests:**
   - `[ ]` Generate OpenAPI documentation for public and authenticated endpoints.
   - `[~]` Controller tests cover existing routes and error handling; authorization and donation cases remain.
@@ -125,11 +125,9 @@ Deliver a modular, scalable platform that empowers individuals and libraries to:
 
 ## Recommended implementation order
 
-1. **Finish Phase 1 domain work:** Add loan/donation transaction types, complete ownership and visibility rules in services, and test the remaining lending and donation cases. The web backend entry point, member ownership, visibility, condition tracking, and initial public-copy discovery are already present.
-2. **Verify Phase 3 against PostgreSQL:** Run the existing Flyway migration through the PostgreSQL profile, validate the schema and JPA mappings, then add PostgreSQL integration tests and any required indexes/migrations.
-3. **Develop Phase 2 API:** Implement REST controllers, authentication and authorization, privacy enforcement, and lending/donation transaction handlers.
-4. **Build Phase 4 frontend:** Initialize React and implement personal collection, community discovery, and exchange workflows against the API contract.
-5. **Integrate Phase 5 recommendations:** Define data-use rules and recommendation behavior, then build and connect the recommendation service after core workflows are stable.
+1. **Build Phase 1 transaction types next:** Define loan/donation transaction types, complete ownership and visibility rules in services, and test the remaining lending and donation cases. The web backend entry point, member ownership, visibility, condition tracking, and initial public-copy discovery are already present.
+2. **Build Phase 4 frontend:** Initialize React and implement personal collection, community discovery, and exchange workflows against the API contract.
+3. **Integrate Phase 5 recommendations:** Define data-use rules and recommendation behavior, then build and connect the recommendation service after core workflows are stable.
 
 ## Progress update procedure
 
